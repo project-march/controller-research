@@ -72,6 +72,21 @@ class OdriveMotor(object):
     def reboot(self):
         """Reboot the odrive."""
         self._odrive.reboot()
+
+    @property
+    def brake_resistance(self):
+        """Return the odrive brake resistance value."""
+        return self._odrive.config.brake_resistance
+
+    @brake_resistance.setter
+    def brake_resistance(self, brake_resistance):
+        """Set a new value as brake resistance.
+
+        :param brake_resistance: A new brake resistance value as float
+        """
+        if not isinstance(brake_resistance, float):
+            raise TypeError(TYPE_ERROR_MSG.format(gt=type(brake_resistance), nm='brake_resistance', rt='float'))
+        self._odrive.config.brake_resistance = brake_resistance
     # endregion
 
     # region Motor variables
@@ -81,9 +96,39 @@ class OdriveMotor(object):
         return self._axis.motor.error
 
     @property
-    def current_state(self):
+    def is_calibrated(self):
+        """Return if the motor has successfully calibrated."""
+        return self._axis.motor.is_calibrated
+
+    @property
+    def pre_calibrated(self):
+        """Return the pre calibrated value."""
+        return self._axis.motor.config.pre_calibrated
+
+    @pre_calibrated.setter
+    def pre_calibrated(self, pre_calibrated_val):
+        """Set the pre calibrated value to the specified axis.
+
+        :param pre_calibrated_val: The pre calibration value as bool
+        """
+        if not isinstance(pre_calibrated_val, int):
+            raise TypeError(TYPE_ERROR_MSG.format(gt=type(pre_calibrated_val), nm='pre_calibrated_val', rt='int'))
+        self._axis.motor.config.pre_calibrated = pre_calibrated_val
+
+    @property
+    def state(self):
         """Return the current state of the motor."""
         return self._axis.current_state
+
+    @state.setter
+    def state(self, requested_state):
+        """Set a new requested state to the specified axis on the odrive.
+
+        :param requested_state: a new requested state (see odrive enums)
+        """
+        if not isinstance(requested_state, int):
+            raise TypeError(TYPE_ERROR_MSG.format(gt=type(requested_state), nm='requested_state', rt='int'))
+        self._axis.requested_state = requested_state
 
     @property
     def watchdog_timer(self):
@@ -144,6 +189,21 @@ class OdriveMotor(object):
         if not isinstance(motor_type, int) or motor_type not in (0, 1, 2):
             raise TypeError(TYPE_ERROR_MSG.format(gt=type(motor_type), nm='motor_type', rt='int (0, 1, 2)'))
         self._axis.motor.config.motor_type = motor_type
+
+    @property
+    def direction(self):
+        """Return the motor direction."""
+        return self._axis.motor.config.direction
+
+    @direction.setter
+    def direction(self, motor_direction):
+        """Set the new motor direction to the specified axis.
+
+        :param motor_direction: The motor direction as int (0, 1)
+        """
+        if not isinstance(motor_direction, int) or motor_direction not in (0, 1):
+            raise TypeError(TYPE_ERROR_MSG.format(gt=type(motor_direction), nm='motor_direction', rt='int (0, 1)'))
+        self._axis.motor.config.direction = motor_direction
     # endregion
 
     # region Controller variables
@@ -226,6 +286,21 @@ class OdriveMotor(object):
         if not isinstance(new_vel_limit, float):
             raise TypeError(TYPE_ERROR_MSG.format(gt=type(new_vel_limit), nm='new_vel_limit', rt='float'))
         self._axis.controller.config.vel_limit = new_vel_limit
+
+    @property
+    def velocity_integrator_gain(self):
+        """Return the velocity integrator gain value."""
+        return self._axis.controller.config.vel_integrator_gain
+
+    @velocity_integrator_gain.setter
+    def velocity_integrator_gain(self, vel_integrator_gain):
+        """Set a new value for the velocity integrator gain.
+
+        :param vel_integrator_gain: The new velocity integrator gain as float.
+        """
+        if not isinstance(vel_integrator_gain, float):
+            raise TypeError(TYPE_ERROR_MSG.format(gt=type(vel_integrator_gain), nm='vel_integrator_gain', rt='float'))
+        self._axis.controller.config.vel_integrator_gain = vel_integrator_gain
     # endregion
 
     # region Actuating variables
@@ -308,7 +383,28 @@ class OdriveMotor(object):
 
     @encoder_mode.setter
     def encoder_mode(self, encoder_mode):
+        """Set the encoder mode, see enums for possibilities.
+
+        :param encoder_mode: The new encoder mode as integer.
+        """
         if not isinstance(encoder_mode, int) or encoder_mode not in (0, 1):
             raise TypeError(TYPE_ERROR_MSG.format(gt=type(encoder_mode), nm='encoder_mode', rt='int (0, 1)'))
         self._axis.encoder.config.mode = encoder_mode
+    # endregion
+
+    # region Sensorless variables
+    @property
+    def sensorless_estimator_pm_flux_linkage(self):
+        """Return the pm flux linkage, see odrive manual for the calculation."""
+        return self._axis.sensorless_estimatro.config.pm_flux_linkage
+
+    @sensorless_estimator_pm_flux_linkage.setter
+    def sensorless_estimator_pm_flux_linkage(self, pm_flux_linkage):
+        """Set a new pm flux linkage, see odrive manual for the calculation.
+
+        :param pm_flux_linkage: The new pm flux linkage as float
+        """
+        if not isinstance(pm_flux_linkage, float):
+            raise TypeError(TYPE_ERROR_MSG.format(gt=type(pm_flux_linkage), nm='pm_flux_linkage', rt='float'))
+        self._axis.sensorless_estimatro.config.pm_flux_linkage = pm_flux_linkage
     # endregion
