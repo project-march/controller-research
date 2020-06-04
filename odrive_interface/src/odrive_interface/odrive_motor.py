@@ -58,17 +58,14 @@ class OdriveMotor(object):
         """Return the error state of the motor."""
         return self._axis.error
 
-    @property
     def set_configuration(self):
         """Save the current configurations to the odrive."""
         self._odrive.save_configuration()
 
-    @property
     def erase_configuration(self):
         """Delete the configuration on the odrive."""
         self._odrive.erase_configuration()
 
-    @property
     def reboot(self):
         """Reboot the odrive."""
         self._odrive.reboot()
