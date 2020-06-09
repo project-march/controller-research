@@ -6,17 +6,21 @@ import rospy
 class OdriveMotor(object):
     """Base class to communicate with a specific motor connected to a specified Odrive."""
 
-    AXIS_STATES = {k: v for (k, v) in enums.__dict__.items() if k.startswith('AXIS')}
+    # The states are used to set the specified axis to a designated operating state, look at odrive enums for more info
+    AXIS_STATES = {axis_state: nr for (axis_state, nr) in enums.__dict__.items() if axis_state.startswith('AXIS')}
 
-    MOTOR_MODES = {k: v for (k, v) in enums.__dict__.items() if k.startswith('MOTOR')}
-    CONTROL_MODES = {k: v for (k, v) in enums.__dict__.items() if k.startswith('CTRL')}
-    ENCODER_MODES = {k: v for (k, v) in enums.__dict__.items() if k.startswith('AXIS')}
+    # The modes are used to set important operating parameters, look at odrive enums for more info
+    MOTOR_MODES = {mode_name: nr for (mode_name, nr) in enums.__dict__.items() if mode_name.startswith('MOTOR')}
+    CONTROL_MODES = {mode_name: nr for (mode_name, nr) in enums.__dict__.items() if mode_name.startswith('CTRL')}
+    ENCODER_MODES = {mode_name: nr for (mode_name, nr) in enums.__dict__.items() if mode_name.startswith('AXIS')}
 
-    AXIS_ERRORS = {k: v for (k, v) in enums.errors.axis.__dict__.items() if k.startswith('ERROR')}
-    MOTOR_ERRORS = {k: v for (k, v) in enums.errors.motor.__dict__.items() if k.startswith('ERROR')}
-    ENCODER_ERRORS = {k: v for (k, v) in enums.errors.encoder.__dict__.items() if k.startswith('ERROR')}
-    CONTROL_ERRORS = {k: v for (k, v) in enums.errors.controller.__dict__.items() if k.startswith('ERROR')}
+    # The error codes are used to translate an error code to an error message, look at the odrive enums for more info
+    AXIS_ERRORS = {name: nr for (name, nr) in enums.errors.axis.__dict__.items() if name.startswith('ERROR')}
+    MOTOR_ERRORS = {name: nr for (name, nr) in enums.errors.motor.__dict__.items() if name.startswith('ERROR')}
+    ENCODER_ERRORS = {name: nr for (name, nr) in enums.errors.encoder.__dict__.items() if name.startswith('ERROR')}
+    CONTROL_ERRORS = {name: nr for (name, nr) in enums.errors.controller.__dict__.items() if name.startswith('ERROR')}
 
+    # A standard error message used when given type does not match the requested type
     TYPE_ERROR_MSG = 'Given type {gt} for {nm} is insufficient, requested type is {rt}'
 
     def __init__(self, odrive, odrive_axis):

@@ -13,6 +13,11 @@ _CRC_KEY = 'crc16'
 
 class OdriveConnectionManager:
     def __init__(self, serial_numbers=None, fibre_logger=Logger(verbose=False)):
+        """Setup communication with given serial numbers which are connected to the PC.
+
+        :param serial_numbers: The serial numbers to search for when connecting
+        :param fibre_logger: specify a logger for the fibre package
+        """
         self.serial_numbers = serial_numbers
         self.odrives = {}
 
