@@ -1,7 +1,6 @@
 # This config uses industrial_ci (https://github.com/ros-industrial/industrial_ci.git).
 # For troubleshooting, see readme (https://github.com/ros-industrial/industrial_ci/blob/master/README.rst)
 
-os: linux
 language: generic # optional, just removes the language badge
 
 services:
@@ -9,7 +8,7 @@ services:
 
 notifications:
   slack:
-    secure: v5g/n5FRg5QKLfnt47wqQbOF0Uo0ZJ3PtGmOnFW7gdaBUTL5nZAOrb/tnpQzR9LqKj6YK1z4iq2PndZViWie440hyK8Jf3jEHFsiFHCC+Jwnpr+1Mg0/dndDXlcBUJr92WfkyvnECDImLl6xR/7tZUCSvXE2l+4Pno/zjYnc66NUUxxL5O9BcDl2vzHJXVJNmqePNzH7MrOlgVryhJ6g0BQLQltCBggJ0M1L9li1b7AyUWm82MvFoRDhh6xGmU7bs6j3naTkbrpPzH91Z7oHdT1ZoCxgT8i72IRPIH/RX42aszzWhBBbABBZDUWR7KtSNCySFw+eN4HdNDfZc6Ng+33GlOA7ZShIbp8NqLK7poTexo+FnlYOsRhbNkQBoI34bUz0C0pJ/TbWUqjp2CMfgFSIhylGe/Gttq19eHYSjPNZ7EH0mwGlLOdOcvr/DQZnTEb7H9lbbMjefxvAGgJGvsYMvRTK3gAiOKl1MwrVxaWoDGmSjTteSl61jXr6N+12lfCwh+tvUNSEctwslXU2dIJ/UttNyOthNak5k2tsvVmiiDnuoSZrellnmbRHNlB9paUOWyPjTofGkfkRqN8m2U85I8ruvzd6X2uMjG8gYwuSPaKyleim3qSueGxYC6uG17bdF7oaxzrRkI8GOpbbJSetZBkmUpqhm+c0q4E0csI=
+    secure: chFpoojxMi0Jq4o3oDGRYsEjGE2D2/UB2lj2xTc+lQpg+68gFjuwBqek0jGOT/opqyMxHOEuL3Ok3hpo5gIyYVpwURMOkxIVuZzbHkvALdbwUNfETR4/CyQthgYSSvCBNVL2wf33Z2cEAKTlC2cq3hc5k76fDAtsdSi195oPA9oDlEcA5ce8l9XKoi5CN2i7Ug2aIQpHNnQHykvdQdu9vn5Nz8IrGwNcmzNpBPCVcKliZAOkCuhiYCEV89JTz5emyDTMaKPj8UrlgUs2supNX/UejdjSWvQ2ab2rhdF3Npc+l1hhzt2/3IQ8zut9KFJdWIHK0qx8KSQWhgRtilVwp5rCkx5F9gCPPxjZzVkRoFzPn9aK3jHhewHVb2YGJvWs+b+wfl9n/b6qVtz/lSoyuvDdvnsz2agKLK6cyfYSLfnOEyEdLDACAp+WKBUoUztkKDKnYu9KCJTZ3aIxW3SfecqyggwxAnDaX+ott7jHNoueuiGXennMCyYGDMHm4eS9G0S/co1jvPZnE4veu+kBYJtYP+X8z4py0h2/MBl0KUWgFSUb7zAVXDlKpogeVD0mpu0fgK/uRwN5fFVi9Ssk6YoG1raoK83Uypywe7fZdG3PM9oV3V40bF9+OPZMoNxkP0hVUxiBx0OuJApHSQEWQHOSiOQsKxiqGQKKcBF+Xik=
   email: false
 
 # include the following block if the C/C++ build artifacts should get cached by Travis,
@@ -30,6 +29,7 @@ env:
     - CCACHE_DIR=$HOME/.ccache # enables C/C++ caching in industrial_ci
     - BUILDER=colcon
     - CATKIN_LINT=pedantic
+    - CATKIN_LINT_ARGS='--ignore launch_depend'
     # DEBIAN_FRONTEND disables interactive frontends when installing packages. This is necessary for tzdata.
     - DOCKER_RUN_OPTS='-e DEBIAN_FRONTEND=noninteractive'
     - DOWNSTREAM_WORKSPACE=.rosinstall
