@@ -111,11 +111,12 @@ int updateTargetConfig(odrive_endpoint* endpoint, const Json::Value& odrive_json
  *  @return ODRIVE_OK on success
  *
  */
-int setChannelConfig(odrive_endpoint* endpoint, const Json::Value& odrive_json, Json::Value config_json, bool save_config = 0)
+int setChannelConfig(odrive_endpoint* endpoint, const Json::Value& odrive_json, Json::Value config_json,
+                     bool save_config = 0)
 {
   int ret = ODRIVE_OK;
 
-  for (auto & i : config_json)
+  for (auto& i : config_json)
   {
     string name = i["name"].asString();
     string type = i["type"].asString();
