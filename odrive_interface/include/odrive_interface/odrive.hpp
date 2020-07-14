@@ -1,10 +1,10 @@
 #ifndef ODRIVE_HPP_
 #define ODRIVE_HPP_
 
-#include <stdint.h>
+#include <cstdint>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <getopt.h>
 #include <iostream>
 #include <string>
@@ -16,19 +16,29 @@
 
 #include "ros/ros.h"
 #include "odrive_interface/odrive_endpoint.hpp"
-#include "odrive_interface/odrive_utils.hpp"
 #include "odrive_interface/odrive_enums.hpp"
 #include "odrive_interface/odrive_msg.h"
 
-#define ODRIVE_OK    0
-#define ODRIVE_ERROR 1
+class Odrive
+{
+public:
+  /**
+   * initialize the odrive with specified axis
+   */
+  Odrive(const std::string& serial_number, const std::string& axis_number);
 
+  /**
+   * Destroy the odrive object
+   */
+  ~Odrive();
 
-class odrive{
+  std::string serial_number;
+  std::string axis_number;
 
-    private:
+private:
+  int getJson();
 
-    public:
-
+  Json::Value odrive_json_;
+  OdriveEndpoint odrive_endpoint_;
 };
 #endif

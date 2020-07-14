@@ -1,168 +1,61 @@
 #include "odrive_interface/odrive.hpp"
 
+#define ODRIVE_OK 0;
+#define ODRIVE_ERROR 1;
+
 using namespace std;
 
-Json::Value odrive_json;
-bool targetJsonValid = false;
-odrive_endpoint* endpoint = NULL;
-
-/**
- *
- * Publise odrive message to ROS
- * @param endpoint odrive enumarated endpoint
- * @param odrive_json target json
- * @param odrive_pub ROS publisher
- * return ODRIVE_OK in success
- *
- */
-int publishMessage(ros::Publisher odrive_pub)
+Odrive::Odrive(const std::string& serial_number, const std::string& axis_number)
 {
-  uint16_t u16val;
-  uint8_t u8val;
-  float fval;
-  odrive_interface::odrive_msg msg;
+  this->serial_number = serial_number;
+  this->axis_number = axis_number;
 
-  // Collect data
-  readOdriveData(endpoint, odrive_json, string("vbus_voltage"), fval);
-  msg.vbus = fval;
-  readOdriveData(endpoint, odrive_json, string("axis0.error"), u16val);
-  msg.error0 = u16val;
-  readOdriveData(endpoint, odrive_json, string("axis1.error"), u16val);
-  msg.error1 = u16val;
-  readOdriveData(endpoint, odrive_json, string("axis0.current_state"), u8val);
-  msg.state0 = u8val;
-  readOdriveData(endpoint, odrive_json, string("axis1.current_state"), u8val);
-  msg.state1 = u8val;
-  readOdriveData(endpoint, odrive_json, string("axis0.encoder.vel_estimate"), fval);
-  msg.vel0 = fval;
-  readOdriveData(endpoint, odrive_json, string("axis1.encoder.vel_estimate"), fval);
-  msg.vel1 = fval;
-  readOdriveData(endpoint, odrive_json, string("axis0.encoder.pos_estimate"), fval);
-  msg.pos0 = fval;
-  readOdriveData(endpoint, odrive_json, string("axis1.encoder.pos_estimate"), fval);
-  msg.pos1 = fval;
-  readOdriveData(endpoint, odrive_json, string("axis0.motor.current_meas_phB"), fval);
-  msg.curr0B = fval;
-  readOdriveData(endpoint, odrive_json, string("axis0.motor.current_meas_phC"), fval);
-  msg.curr0C = fval;
-  readOdriveData(endpoint, odrive_json, string("axis1.motor.current_meas_phB"), fval);
-  msg.curr1B = fval;
-  readOdriveData(endpoint, odrive_json, string("axis1.motor.current_meas_phC"), fval);
-  msg.curr1C = fval;
-  execOdriveGetTemp(endpoint, odrive_json, string("axis0.motor.get_inverter_temp"), fval);
-  msg.temp0 = fval;
-  execOdriveGetTemp(endpoint, odrive_json, string("axis1.motor.get_inverter_temp"), fval);
-  msg.temp1 = fval;
-
-  // Publish message
-  odrive_pub.publish(msg);
-
-  return ODRIVE_OK;
-}
-
-/**
- *
- * Node main function
- *
- */
-int main(int argc, char** argv)
-{
-  std::string od_sn;
-  std::string od_cfg;
-
-  ROS_INFO("Starting ODrive...");
-
-  // Initialize ROS node
-  ros::init(argc, argv, "ros_odrive");  // Initializes Node Name
-  ros::NodeHandle nh("~");
-  ros::Rate r(10);
-  nh.param<std::string>("od_sn", od_sn, "0x00000000");
-  nh.param<std::string>("od_cfg", od_cfg, "");
-
-  // Get device serial number
-  if (nh.getParam("od_sn", od_sn))
+  // Open USB connection
+  if (this->odrive_endpoint_.open_connection(serial_number))
   {
-    ROS_INFO("Node odrive S/N: %s", od_sn.c_str());
-  }
-  else
-  {
-    ROS_ERROR("Failed to get sn parameter %s!", od_sn.c_str());
-    return 1;
-  }
-  ros::Publisher odrive_pub = nh.advertise<odrive_interface::odrive_msg>("odrive_msg_" + od_sn, 100);
-
-  // Get odrive endpoint instance
-  endpoint = new odrive_endpoint();
-
-  // Enumarate Odrive target
-  if (endpoint->init(stoull(od_sn, 0, 16)))
-  {
-    ROS_ERROR("Device not found!");
-    return 1;
+    ROS_ERROR("Odrive %s error opening USB connection", serial_number.c_str());
   }
 
   // Read JSON from target
-  if (getJson(endpoint, &odrive_json))
+  if (getJson())
   {
-    return 1;
+    ROS_ERROR("Odrive %s error getting JSON", serial_number.c_str());
   }
-  targetJsonValid = true;
+}
 
-  // Process configuration file
-  if (nh.searchParam("od_cfg", od_cfg))
+Odrive::~Odrive()
+{
+  this->odrive_endpoint_.remove();
+}
+
+int Odrive::getJson()
+{
+  commBuffer rx;
+  commBuffer tx;
+
+  int len;
+  int address = 0;
+
+  string json;
+
+  do
   {
-    nh.getParam("od_cfg", od_cfg);
-    ROS_INFO("Using configuration file: %s", od_cfg.c_str());
+    this->odrive_endpoint_.endpointRequest(0, rx, len, tx, true, 512, true, address);
+    address = address + len;
+    json.append((const char*)&rx[0], (size_t)len);
+  } while (len > 0);
 
-    updateTargetConfig(endpoint, odrive_json, od_cfg);
-  }
-  uint8_t u8val;
-  uint16_t u16val;
-  u16val = u8val = 0;
-  writeOdriveData(endpoint, odrive_json, "axis0.motor.error", u16val);
-  writeOdriveData(endpoint, odrive_json, "axis0.encoder.error", u8val);
-  writeOdriveData(endpoint, odrive_json, "axis0.controller.error", u8val);
-  writeOdriveData(endpoint, odrive_json, "axis0.error", u16val);
+  Json::Reader reader;
+  bool res = reader.parse(json, this->odrive_json_);
 
-  float setpoint = 400;
-  uint8_t sensorless_mode = AXIS_STATE_SENSORLESS_CONTROL;
-
-  writeOdriveData(endpoint, odrive_json, "axis0.requested_state", sensorless_mode);
-  writeOdriveData(endpoint, odrive_json, "axis0.controller.vel_setpoint", setpoint);
-
-  // Example loop - reading values and updating motor velocity
-  ROS_INFO("Starting idle loop");
-  while (ros::ok())
+  if (!res)
   {
-    uint16_t u16retvalaxis;
-    uint16_t u16retvalmotor;
-    uint8_t u16retvalencoder;
-    uint8_t u16retvalcontroller;
-
-    readOdriveData(endpoint, odrive_json, string("axis0.error"), u16retvalaxis);
-    readOdriveData(endpoint, odrive_json, string("axis0.motor.error"), u16retvalmotor);
-    readOdriveData(endpoint, odrive_json, string("axis0.encoder.error"), u16retvalencoder);
-    readOdriveData(endpoint, odrive_json, string("axis0.controller.error"), u16retvalcontroller);
-
-    ROS_INFO("error in axis0 %i, motor %i, encoder %i, controller %i", u16retvalaxis, u16retvalmotor, u16retvalencoder,
-             u16retvalcontroller);
-
-    writeOdriveData(endpoint, odrive_json, "axis0.controller.vel_setpoint", setpoint);
-
-    // Publish status message
-    publishMessage(odrive_pub);
-
-    // update watchdog
-    execOdriveFunc(endpoint, odrive_json, "axis0.watchdog_feed");
-    execOdriveFunc(endpoint, odrive_json, "axis1.watchdog_feed");
-
-    // idle loop
-    r.sleep();
+    return ODRIVE_ERROR;
   }
+  return ODRIVE_OK;
+}
 
-  endpoint->remove();
-
-  delete endpoint;
-
-  return 0;
+int main()
+{
+  ROS_INFO("Starting");
 }

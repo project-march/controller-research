@@ -23,7 +23,7 @@ generate_messages(
 
 set(rt_LIBRARIES rt)
 set(pthread_LIBRARIES pthread)
-set(usb-1.0_LIBRARIES usb-1.0)
+set(libusb-1.0_LIBRARIES usb-1.0)
 set(jsoncpp_LIBRARIES jsoncpp)
 
 catkin_package(
@@ -37,9 +37,9 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(odrive_interface src/odrive.cpp src/odrive_endpoint.cpp src/odrive_utils.cpp)
+add_executable(odrive_interface src/odrive.cpp src/odrive_endpoint.cpp)
 add_dependencies(odrive_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(odrive_interface ${usb-1.0_LIBRARIES} ${catkin_LIBRARIES} ${jsoncpp_LIBRARIES})
+target_link_libraries(odrive_interface ${libusb-1.0_LIBRARIES} ${catkin_LIBRARIES} ${jsoncpp_LIBRARIES})
 
 install(TARGETS odrive_interface
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

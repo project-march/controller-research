@@ -1,10 +1,10 @@
 #ifndef ODRIVE_ENDPOINT_HPP_
 #define ODRIVE_ENDPOINT_HPP_
 
-#include <stdint.h>
+#include <cstdint>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <getopt.h>
 #include <iostream>
 #include <string>
@@ -59,37 +59,116 @@
 
 typedef std::vector<uint8_t> commBuffer;
 
-class odrive_endpoint
+class OdriveEndpoint
 {
 public:
-  odrive_endpoint();
-  ~odrive_endpoint();
+  /**
+   * initialize USB library and local variables
+   */
+  OdriveEndpoint();
 
-  int init(uint64_t serialNumber);
+  /**
+   * release USB library
+   */
+  ~OdriveEndpoint();
+
+  /**
+   * enumerate ODrive hardware
+   * @param serialNumber odrive serial number
+   * @return ODRIVE_COMM_SUCCESS on success else ODRIVE_COMM_ERROR
+   */
+  int open_connection(const std::string& serialNumber);
+
+  /**
+   * close ODrive device
+   */
   void remove();
 
+  /**
+   *  Read value from ODrive
+   *  @param id odrive ID
+   *  @param value Data read
+   *  @return ODRIVE_COMM_SUCCESS on success else ODRIVE_COMM_ERROR
+   */
   template <typename T>
   int getData(int id, T& value);
+
+  /**
+   *  Write value to Odrive
+   *  @param id odrive ID
+   *  @param value Data to be written
+   *  @return ODRIVE_COMM_SUCCESS on success
+   */
   template <typename TT>
   int setData(int id, const TT& value);
 
+  /**
+   *  Request function to ODrive
+   *  @param id odrive ID
+   *  @return ODRIVE_COMM_SUCCESS on success
+   */
   int execFunc(int id);
-  int endpointRequest(int endpoint_id, commBuffer& received_payload, int& received_length, commBuffer payload, bool ack,
+
+  /**
+   * Request to USB endpoint
+   * @param handle USB device handler
+   * @param endpoint_id odrive ID
+   * @param received_payload receive buffer
+   * @param received_length receive length
+   * @param payload data read
+   * @param ack request acknowledge
+   * @param length data length
+   * @param read send read address
+   * @param address read address
+   * @return LIBUSB_SUCCESS on success
+   */
+  int endpointRequest(int endpoint_id, commBuffer& received_payload, int& received_length, const commBuffer& payload, bool ack,
                       int length, bool read = false, int address = 0);
 
 private:
-  libusb_context* lib_usb_context_;
-  libusb_device_handle* odrive_handle_ = nullptr;
-
-  std::mutex ep_lock;
-  short outbound_seq_no_ = 0;
-
+  /**
+   * Append short data to data buffer
+   * @param buf data buffer
+   * @param value data to append
+   */
   static void appendShortToCommBuffer(commBuffer& buf, short value);
-  void appendIntToCommBuffer(commBuffer& buf, int value);
 
+  /**
+   * Append int data to data buffer
+   * @param buf data buffer
+   * @param value data to append
+   */
+  static void appendIntToCommBuffer(commBuffer& buf, int value);
+
+  /**
+   *  Decode odrive packet
+   *  @param buf data buffer
+   *  @param seq_no packet sequence number
+   *  @param received_packet received buffer
+   *  @return data buffer
+   */
   static commBuffer decodeODrivePacket(commBuffer& buf, short& seq_no);
+
+  /**
+   * Read data buffer from Odrive hardware
+   * @param seq_no next sequence number
+   * @param endpoint_id USB endpoint ID
+   * @param response_size maximum data length to be read
+   * @param read append request address
+   * @param address destination address
+   * @param input data buffer to send
+   * @return data buffer read
+   */
   commBuffer createODrivePacket(short seq_no, int endpoint_id, short response_size, bool read, int address,
                                 const commBuffer& input);
+
+  libusb_context* lib_usb_context_ = nullptr;
+  libusb_device_handle* odrive_handle_ = nullptr;
+
+  int outbound_seq_no_ = 0;
+
+  std::string odrive_serial_number_;
+  std::mutex ep_lock_;
 };
 
 #endif  // ODRIVE_ENDPOINT_HPP_
