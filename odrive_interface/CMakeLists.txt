@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     )
 
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED)
 
 add_message_files(
     FILES
@@ -29,23 +29,20 @@ set(jsoncpp_LIBRARIES jsoncpp)
 catkin_package(
     INCLUDE_DIRS include
     CATKIN_DEPENDS message_runtime roscpp std_msgs
-    DEPENDS ${rt_LIBRARIES} ${pthread_LIBRARIES} ${usb-1.0_LIBRARIES} ${jsoncpp_LIBRARIES}
+    DEPENDS ${jsoncpp_LIBRARIES} ${pthread_LIBRARIES} ${rt_LIBRARIES} ${usb-1.0_LIBRARIES}
 )
 
-include_directories(
-    include
-    ${catkin_INCLUDE_DIRS}
-)
+include_directories(include SYSTEM ${catkin_INCLUDE_DIRS} ${boost_INCLUDE_DIRS})
 
-add_executable(odrive_interface src/odrive.cpp src/odrive_endpoint.cpp)
-add_dependencies(odrive_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(odrive_interface ${libusb-1.0_LIBRARIES} ${catkin_LIBRARIES} ${jsoncpp_LIBRARIES})
+add_executable(${PROJECT_NAME} src/odrive.cpp src/odrive_endpoint.cpp)
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME} ${libusb-1.0_LIBRARIES} ${catkin_LIBRARIES} ${jsoncpp_LIBRARIES})
 
-install(TARGETS odrive_interface
+install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 
-install(TARGETS odrive_interface
+install(TARGETS ${PROJECT_NAME}
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}

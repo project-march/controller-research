@@ -122,8 +122,8 @@ public:
    * @param address read address
    * @return LIBUSB_SUCCESS on success
    */
-  int endpointRequest(int endpoint_id, commBuffer& received_payload, int& received_length, const commBuffer& payload, bool ack,
-                      int length, bool read = false, int address = 0);
+  int endpointRequest(int endpoint_id, commBuffer& received_payload, int& received_length, const commBuffer& payload,
+                      bool ack, int length, bool read = false, int address = 0);
 
 private:
   /**
