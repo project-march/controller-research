@@ -9,7 +9,11 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     )
 
-find_package(Boost REQUIRED)
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(usb-1.0 libusb-1.0)
+pkg_check_modules(jsoncpp jsoncpp)
+pkg_check_modules(pthread pthread-stubs)
 
 add_message_files(
     FILES
@@ -31,6 +35,8 @@ catkin_package(
     CATKIN_DEPENDS message_runtime roscpp std_msgs
     DEPENDS ${jsoncpp_LIBRARIES} ${pthread_LIBRARIES} ${rt_LIBRARIES} ${usb-1.0_LIBRARIES}
 )
+
+link_libraries(${jsoncpp_LIBRARIES} ${pthread_LIBRARIES} ${rt_LIBRARIES} ${usb-1.0_LIBRARIES})
 
 include_directories(include SYSTEM ${catkin_INCLUDE_DIRS} ${boost_INCLUDE_DIRS})
 
