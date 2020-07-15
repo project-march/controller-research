@@ -16,15 +16,16 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(jsoncpp REQUIRED jsoncpp )
 pkg_check_modules(libusb-1.0 REQUIRED libusb-1.0 )
 
-find_package(jsoncpp REQUIRED)
+find_path(Jsoncpp_INCLUDE_DIR
+    NAMES json/json.h
+    PATH_SUFFIXES jsoncpp
+    PATHS ${Jsoncpp_PKGCONF_INCLUDE_DIRS}
+)
 
-find_path(LIBUSB_INCLUDE_DIR
+find_path(libusb-1.0_INCLUDE_DIR
     NAMES libusb.h
-    PATH_SUFFIXES "include" "libusb" "libusb-1.0")
-
-find_library(LIBUSB_LIBRARY
-    NAMES usb
-    PATH_SUFFIXES "lib" "lib32" "lib64")
+    PATH_SUFFIXES "include" "libusb" "libusb-1.0"
+)
 
 set(jsoncpp_LIBRARIES jsoncpp)
 set(usb-1.0_LIBRARIES libusb-1.0)
@@ -40,17 +41,17 @@ generate_messages(
 )
 
 catkin_package(
-    INCLUDE_DIRS include
     CATKIN_DEPENDS message_runtime roscpp std_msgs
     DEPENDS ${jsoncpp_LIBRARIES} ${libusb-1.0_LIBRARIES}
+    INCLUDE_DIRS include
 )
 
 link_libraries(${jsoncpp_LIBRARIES} ${libusb-1.0_LIBRARIES})
-include_directories(include SYSTEM ${catkin_INCLUDE_DIRS} ${boost_INCLUDE_DIRS})
+include_directories(include SYSTEM ${catkin_INCLUDE_DIRS} ${boost_INCLUDE_DIRS} ${jsoncpp_INCLUDE_DIRS} ${libusb-1.0_INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME} src/odrive.cpp src/odrive_endpoint.cpp)
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(${PROJECT_NAME} ${libusb-1.0_LIBRARIES} ${catkin_LIBRARIES} ${jsoncpp_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${jsoncpp_LIBRARIES} ${libusb-1.0_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
