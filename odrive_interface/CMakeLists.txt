@@ -1,19 +1,33 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(odrive_interface)
 
+cmake_policy(SET CMP0054 NEW)
+
 add_compile_options(-std=c++14 -Wall -Wextra -Werror)
 
 find_package(catkin REQUIRED COMPONENTS
     message_generation
     roscpp
     std_msgs
-    )
+)
 
 find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(usb-1.0 libusb-1.0)
-pkg_check_modules(jsoncpp jsoncpp)
-pkg_check_modules(pthread pthread-stubs)
+pkg_check_modules(jsoncpp REQUIRED jsoncpp )
+pkg_check_modules(libusb-1.0 REQUIRED libusb-1.0 )
+
+find_package(jsoncpp REQUIRED)
+
+find_path(LIBUSB_INCLUDE_DIR
+    NAMES libusb.h
+    PATH_SUFFIXES "include" "libusb" "libusb-1.0")
+
+find_library(LIBUSB_LIBRARY
+    NAMES usb
+    PATH_SUFFIXES "lib" "lib32" "lib64")
+
+set(jsoncpp_LIBRARIES jsoncpp)
+set(usb-1.0_LIBRARIES libusb-1.0)
 
 add_message_files(
     FILES
@@ -25,19 +39,13 @@ generate_messages(
     std_msgs
 )
 
-set(rt_LIBRARIES rt)
-set(pthread_LIBRARIES pthread)
-set(libusb-1.0_LIBRARIES usb-1.0)
-set(jsoncpp_LIBRARIES jsoncpp)
-
 catkin_package(
     INCLUDE_DIRS include
     CATKIN_DEPENDS message_runtime roscpp std_msgs
-    DEPENDS ${jsoncpp_LIBRARIES} ${pthread_LIBRARIES} ${rt_LIBRARIES} ${usb-1.0_LIBRARIES}
+    DEPENDS ${jsoncpp_LIBRARIES} ${libusb-1.0_LIBRARIES}
 )
 
-link_libraries(${jsoncpp_LIBRARIES} ${pthread_LIBRARIES} ${rt_LIBRARIES} ${usb-1.0_LIBRARIES})
-
+link_libraries(${jsoncpp_LIBRARIES} ${libusb-1.0_LIBRARIES})
 include_directories(include SYSTEM ${catkin_INCLUDE_DIRS} ${boost_INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME} src/odrive.cpp src/odrive_endpoint.cpp)
