@@ -5,27 +5,16 @@
 
 using namespace std;
 
-Odrive::Odrive(const std::string& serial_number, const std::string& axis_number)
+Odrive::Odrive(const std::string& joint_name, const std::string& axis_number, OdriveEndpoint* odrive_endpoint)
 {
-  this->serial_number = serial_number;
+  this->joint_name = joint_name;
   this->axis_number = axis_number;
+  this->odrive_endpoint_ = odrive_endpoint;
 
-  // Open USB connection
-  if (this->odrive_endpoint_.open_connection(serial_number))
-  {
-    ROS_ERROR("Odrive %s error opening USB connection", serial_number.c_str());
-  }
-
-  // Read JSON from target
   if (getJson())
   {
     ROS_ERROR("Odrive %s error getting JSON", serial_number.c_str());
   }
-}
-
-Odrive::~Odrive()
-{
-  this->odrive_endpoint_.remove();
 }
 
 int Odrive::getJson()
@@ -40,7 +29,7 @@ int Odrive::getJson()
 
   do
   {
-    this->odrive_endpoint_.endpointRequest(0, rx, len, tx, true, 512, true, address);
+    this->odrive_endpoint_->endpointRequest(0, rx, len, tx, true, 512, true, address);
     address = address + len;
     json.append((const char*)&rx[0], (size_t)len);
   } while (len > 0);
@@ -55,7 +44,194 @@ int Odrive::getJson()
   return ODRIVE_OK;
 }
 
-int main()
+odrive_json_object Odrive::getJsonObject(const std::string& parameter_name)
 {
-  ROS_INFO("Starting");
+  odrive_json_object json_object;
+  // todo: if this does not work see the ros_odrive repo to see the original function
+  for (auto& i : this->odrive_json_)
+  {
+    if (!parameter_name.compare(i["name"].asString()))
+    {
+      json_object.id = i["id"].asInt();
+      json_object.name = i["name"].asString();
+      json_object.type = i["type"].asString();
+      json_object.access = i["access"].asString();
+      return json_object;
+    }
+  }
+
+  json_object.id = -1;
+  ROS_ERROR("Odrive object with name %s is not found in parsed json file", parameter_name.c_str());
+  return json_object;
 }
+
+template <typename TT>
+int Odrive::validateType(const odrive_json_object& json_object, TT& value)
+{
+  if (!json_object.type.compare("float"))
+  {
+    if (sizeof(value) != sizeof(float))
+    {
+      ROS_ERROR("Error value for %s is not float", json_object.name.c_str());
+      return ODRIVE_ERROR;
+    }
+  }
+  else if (!json_object.type.compare("uint8"))
+  {
+    if (sizeof(value) != sizeof(uint8_t))
+    {
+      ROS_ERROR("Error value for %s is not uint8_t", json_object.name.c_str());
+      return ODRIVE_ERROR;
+    }
+  }
+  else if (!json_object.type.compare("uint16"))
+  {
+    if (sizeof(value) != sizeof(uint16_t))
+    {
+      ROS_ERROR("Error value for %s is not uint16_t", json_object.name.c_str());
+      return ODRIVE_ERROR;
+    }
+  }
+  else if (!json_object.type.compare("uint32"))
+  {
+    if (sizeof(value) != sizeof(uint32_t))
+    {
+      ROS_ERROR("Error value for %s is not uint32_t", json_object.name.c_str());
+      return ODRIVE_ERROR;
+    }
+  }
+  else if (!json_object.type.compare("uint64"))
+  {
+    if (sizeof(value) != sizeof(uint64_t))
+    {
+      ROS_ERROR("Error value for %s is not uint64_t", json_object.name.c_str());
+      return ODRIVE_ERROR;
+    }
+  }
+  else if (!json_object.type.compare("int32"))
+  {
+    if (sizeof(value) != sizeof(int))
+    {
+      ROS_ERROR("Error value for %s is not int", json_object.name.c_str());
+      return ODRIVE_ERROR;
+    }
+  }
+  else if (!json_object.type.compare("int16"))
+  {
+    if (sizeof(value) != sizeof(short))
+    {
+      ROS_ERROR("Error value for %s is not short", json_object.name.c_str());
+      return ODRIVE_ERROR;
+    }
+  }
+  else if (!json_object.type.compare("bool"))
+  {
+    if (sizeof(value) != sizeof(bool))
+    {
+      ROS_ERROR("Error value for %s is not bool", json_object.name.c_str());
+      return ODRIVE_ERROR;
+    }
+  }
+  else
+  {
+    ROS_ERROR("Error: invalid type for %s", json_object.name.c_str());
+    return ODRIVE_ERROR;
+  }
+
+  return ODRIVE_OK;
+}
+
+template <typename TT>
+int Odrive::read(const std::string& parameter_name, TT& value)
+{
+  odrive_json_object json_object = this->getJsonObject(parameter_name);
+
+  if (json_object.id == -1)
+  {
+    return ODRIVE_ERROR;
+  }
+
+  if (json_object.access.find('r') == string::npos)
+  {
+    ROS_ERROR("Error: invalid read access for %s", parameter_name.c_str());
+    return ODRIVE_ERROR;
+  }
+
+  if (this->validateType(json_object, value) == 1)
+  {
+    return ODRIVE_ERROR;
+  }
+
+  return this->odrive_endpoint_->getData(json_object.id, value);
+}
+
+template <typename TT>
+int Odrive::write(const std::string& parameter_name, TT& value)
+{
+  odrive_json_object json_object = this->getJsonObject(parameter_name);
+
+  if (json_object.id == -1)
+  {
+    return ODRIVE_ERROR;
+  }
+
+  if (json_object.access.find('w') == string::npos)
+  {
+    ROS_ERROR("Error: invalid read access for %s", parameter_name.c_str());
+    return ODRIVE_ERROR;
+  }
+
+  if (this->validateType(json_object, value) == 1)
+  {
+    return ODRIVE_ERROR;
+  }
+
+  return this->odrive_endpoint_->setData(json_object.id, value);
+}
+
+int Odrive::function(const std::string& function_name)
+{
+  odrive_json_object json_object = this->getJsonObject(function_name);
+
+  if (json_object.id == -1)
+  {
+    return ODRIVE_ERROR;
+  }
+
+  if (json_object.type.compare("function"))
+  {
+    ROS_ERROR("Error: Given parameter %s is not a function on the Odrive", function_name.c_str());
+    return ODRIVE_ERROR;
+  }
+
+  this->odrive_endpoint_->execFunc(json_object.id);
+
+  return 0;
+}
+
+template int Odrive::validateType(const odrive_json_object& json_object, uint8_t&);
+template int Odrive::validateType(const odrive_json_object& json_object, uint16_t&);
+template int Odrive::validateType(const odrive_json_object& json_object, uint32_t&);
+template int Odrive::validateType(const odrive_json_object& json_object, uint64_t&);
+template int Odrive::validateType(const odrive_json_object& json_object, int&);
+template int Odrive::validateType(const odrive_json_object& json_object, short&);
+template int Odrive::validateType(const odrive_json_object& json_object, float&);
+template int Odrive::validateType(const odrive_json_object& json_object, bool&);
+
+template int Odrive::read(const std::string& parameter_name, uint8_t&);
+template int Odrive::read(const std::string& parameter_name, uint16_t&);
+template int Odrive::read(const std::string& parameter_name, uint32_t&);
+template int Odrive::read(const std::string& parameter_name, uint64_t&);
+template int Odrive::read(const std::string& parameter_name, int&);
+template int Odrive::read(const std::string& parameter_name, short&);
+template int Odrive::read(const std::string& parameter_name, float&);
+template int Odrive::read(const std::string& parameter_name, bool&);
+
+template int Odrive::write(const std::string& parameter_name, uint8_t&);
+template int Odrive::write(const std::string& parameter_name, uint16_t&);
+template int Odrive::write(const std::string& parameter_name, uint32_t&);
+template int Odrive::write(const std::string& parameter_name, uint64_t&);
+template int Odrive::write(const std::string& parameter_name, int&);
+template int Odrive::write(const std::string& parameter_name, short&);
+template int Odrive::write(const std::string& parameter_name, float&);
+template int Odrive::write(const std::string& parameter_name, bool&);

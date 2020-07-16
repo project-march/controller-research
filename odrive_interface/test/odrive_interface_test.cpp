@@ -35,5 +35,4 @@ int main(int argc, char** argv)
   }
 
   odrive_endpoint->open_connection(serial_number);
-
 }

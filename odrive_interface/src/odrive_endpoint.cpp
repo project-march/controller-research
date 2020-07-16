@@ -56,13 +56,17 @@ int OdriveEndpoint::open_connection(const std::string& serial_number)
     if (desc.idVendor == ODRIVE_USB_VENDORID && desc.idProduct == ODRIVE_USB_PRODUCTID)
     {
       libusb_device_handle* device_handle;
+      struct libusb_config_descriptor* config;
+
+      bool attached_to_handle = false;
+      unsigned char buf[128];
+
       if (libusb_open(device, &device_handle) != LIBUSB_SUCCESS)
       {
         ROS_WARN("Odrive %s error opening USB device", serial_number.c_str());
         continue;
       }
 
-      struct libusb_config_descriptor* config;
       result = libusb_get_config_descriptor(device, 0, &config);
       int ifNumber = 2;  // config->bNumInterfaces;
 
@@ -83,9 +87,6 @@ int OdriveEndpoint::open_connection(const std::string& serial_number)
       }
       else
       {
-        bool attached_to_handle = false;
-        unsigned char buf[128];
-
         result = libusb_get_string_descriptor_ascii(device_handle, desc.iSerialNumber, buf, 127);
         if (result <= 0)
         {
@@ -104,6 +105,8 @@ int OdriveEndpoint::open_connection(const std::string& serial_number)
           if (sn.compare(0, strlen((const char*)buf), (const char*)buf) == 0)
           {
             ROS_INFO("Odrive with serial number; %s found", serial_number.c_str());
+
+            this->odrive_serial_number = serial_number;
             odrive_handle_ = device_handle;
             attached_to_handle = true;
             break;
@@ -195,13 +198,13 @@ int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payloa
   int result = libusb_bulk_transfer(odrive_handle_, ODRIVE_OUT_EP, packet.data(), packet.size(), &sent_bytes, 0);
   if (result != LIBUSB_SUCCESS)
   {
-    ROS_ERROR("Odrive %s error in transferring data to USB", this->odrive_serial_number_.c_str());
+    ROS_ERROR("Odrive %s error in transferring data to USB", this->odrive_serial_number.c_str());
     this->ep_lock_.unlock();
     return result;
   }
   else if (int(packet.size()) != sent_bytes)
   {
-    ROS_ERROR("Odrive %s error not all data transferring to USB was successful", this->odrive_serial_number_.c_str());
+    ROS_ERROR("Odrive %s error not all data transferring to USB was successful", this->odrive_serial_number.c_str());
   }
 
   // Get response
@@ -211,7 +214,7 @@ int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payloa
                                   &received_bytes, ODRIVE_TIMEOUT);
     if (result != LIBUSB_SUCCESS)
     {
-      ROS_ERROR("Odrive %s error in reading data from USB", this->odrive_serial_number_.c_str());
+      ROS_ERROR("Odrive %s error in reading data from USB", this->odrive_serial_number.c_str());
       this->ep_lock_.unlock();
       return result;
     }
@@ -225,7 +228,7 @@ int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payloa
     received_payload = decodeODrivePacket(receive_buffer, received_seq_no);
     if (received_seq_no != seq_no)
     {
-      ROS_ERROR("Odrive %s error received data out of order", this->odrive_serial_number_.c_str());
+      ROS_ERROR("Odrive %s error received data out of order", this->odrive_serial_number.c_str());
     }
     received_length = received_payload.size();
   }

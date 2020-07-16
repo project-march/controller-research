@@ -19,26 +19,56 @@
 #include "odrive_interface/odrive_enums.hpp"
 #include "odrive_interface/odrive_msg.h"
 
+typedef struct odrive_json_object
+{
+  int id;
+  std::string name;
+  std::string type;
+  std::string access;
+} odrive_json_object;
+
 class Odrive
 {
 public:
   /**
-   * initialize the odrive with specified axis
+   * Initialize the odrive with specified axis
    */
-  Odrive(const std::string& serial_number, const std::string& axis_number);
+  Odrive(const std::string& joint_name, const std::string& axis_number, OdriveEndpoint* odrive_endpoint);
 
   /**
-   * Destroy the odrive object
+   * Check if given value type matched value type of odrive variable
    */
-  ~Odrive();
+  template <typename TT>
+  int validateType(const odrive_json_object& json_object, TT& value);
 
-  std::string serial_number;
+  /**
+   * Read parameter from the odrive object
+   */
+  template <typename TT>
+  int read(const std::string& parameter_name, TT& value);
+
+  /**
+   * Write parameter to the odrive object
+   */
+  template <typename TT>
+  int write(const std::string& parameter_name, TT& value);
+
+  /**
+   * Execute function on the odrive object
+   */
+  int function(const std::string& function_name);
+
+  std::string joint_name;
   std::string axis_number;
+
+  std::string serial_number = odrive_endpoint_->odrive_serial_number;
 
 private:
   int getJson();
 
+  odrive_json_object getJsonObject(const std::string& parameter_name);
+
   Json::Value odrive_json_;
-  OdriveEndpoint odrive_endpoint_;
+  OdriveEndpoint* odrive_endpoint_;
 };
 #endif

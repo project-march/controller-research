@@ -17,7 +17,7 @@
 #define ODRIVE_USB_VENDORID 0x1209
 #define ODRIVE_USB_PRODUCTID 0x0D32
 
-// ODrive USB Protool
+// ODrive USB Protocol
 #define ODRIVE_TIMEOUT 200
 #define ODRIVE_MAX_BYTES_TO_RECEIVE 64
 #define ODRIVE_MAX_RESULT_LENGTH 100
@@ -125,6 +125,8 @@ public:
   int endpointRequest(int endpoint_id, commBuffer& received_payload, int& received_length, const commBuffer& payload,
                       bool ack, int length, bool read = false, int address = 0);
 
+  std::string odrive_serial_number;
+
 private:
   /**
    * Append short data to data buffer
@@ -167,7 +169,6 @@ private:
 
   int outbound_seq_no_ = 0;
 
-  std::string odrive_serial_number_;
   std::mutex ep_lock_;
 };
 
