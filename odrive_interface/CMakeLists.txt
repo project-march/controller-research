@@ -8,6 +8,7 @@ add_compile_options(-std=c++14 -Wall -Wextra -Werror)
 find_package(catkin REQUIRED COMPONENTS
     message_generation
     roscpp
+    roslib
     std_msgs
 )
 
@@ -41,7 +42,7 @@ generate_messages(
 )
 
 catkin_package(
-    CATKIN_DEPENDS message_runtime roscpp std_msgs
+    CATKIN_DEPENDS message_runtime roscpp roslib std_msgs
     DEPENDS ${jsoncpp_LIBRARIES} ${libusb-1.0_LIBRARIES}
     INCLUDE_DIRS include
 )
@@ -49,9 +50,9 @@ catkin_package(
 link_libraries(${jsoncpp_LIBRARIES} ${libusb-1.0_LIBRARIES})
 include_directories(include SYSTEM ${catkin_INCLUDE_DIRS} ${boost_INCLUDE_DIRS} ${jsoncpp_INCLUDE_DIRS} ${libusb-1.0_INCLUDE_DIRS})
 
-add_executable(${PROJECT_NAME} src/odrive.cpp src/odrive_endpoint.cpp)
+add_executable(${PROJECT_NAME} test/odrive_interface_test.cpp src/odrive.cpp src/odrive_endpoint.cpp)
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${jsoncpp_LIBRARIES} ${libusb-1.0_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} yaml-cpp ${jsoncpp_LIBRARIES} ${libusb-1.0_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
