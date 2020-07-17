@@ -17,7 +17,6 @@
 #include "ros/ros.h"
 #include "odrive_interface/odrive_endpoint.hpp"
 #include "odrive_interface/odrive_enums.hpp"
-#include "odrive_interface/odrive_msg.h"
 
 typedef struct odrive_json_object
 {
