@@ -9,13 +9,11 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>jsoncpp</depend>
   <depend>message_generation</depend>
   <depend>message_runtime</depend>
   <depend>roscpp</depend>
   <depend>roslib</depend>
   <depend>std_msgs</depend>
-  <depend>libusb</depend>
   <depend>yaml-cpp</depend>
 
 </package>
