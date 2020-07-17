@@ -10,17 +10,11 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>message_generation</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>roslib</build_depend>
-  <build_depend>std_msgs</build_depend>
 
-  <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>roslib</build_export_depend>
-  <build_export_depend>std_msgs</build_export_depend>
+  <depend>roscpp</depend>
+  <depend>roslib</depend>
+  <depend>std_msgs</depend>
+  <depend>yaml-cpp</depend>
 
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>roslib</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
   <exec_depend>message_runtime</exec_depend>
-
 </package>
