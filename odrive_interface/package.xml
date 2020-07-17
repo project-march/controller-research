@@ -15,7 +15,7 @@
   <depend>roscpp</depend>
   <depend>roslib</depend>
   <depend>std_msgs</depend>
-  <depend>usb-1.0</depend>
+  <depend>libusb</depend>
   <depend>yaml-cpp</depend>
 
 </package>

@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(odrive_interface)
 
-cmake_policy(SET CMP0054 NEW)
-
 add_compile_options(-std=c++14 -Wall -Wextra -Werror)
 
 find_package(Boost REQUIRED COMPONENTS system)
