@@ -209,6 +209,27 @@ int Odrive::function(const std::string& function_name)
   return 0;
 }
 
+int Odrive::setConfigurations(Json::Value configuration_json)
+{
+  for (auto& parameter : configuration_json)
+  {
+    string name = parameter["name"].asString();
+    string type = parameter["type"].asString();
+    float value = parameter["value"].asFloat();
+
+    ROS_INFO("Setting %s to %s", name.c_str(), parameter["value"].asString().c_str());
+    int result = this->write(name, value);
+
+    if (result == 1)
+    {
+      ROS_INFO("Setting failed");
+
+      return result;
+    };
+  }
+  return ODRIVE_OK;
+}
+
 template int Odrive::validateType(const odrive_json_object& json_object, uint8_t&);
 template int Odrive::validateType(const odrive_json_object& json_object, uint16_t&);
 template int Odrive::validateType(const odrive_json_object& json_object, uint32_t&);

@@ -57,10 +57,15 @@ public:
    */
   int function(const std::string& function_name);
 
-  std::string joint_name;
-  std::string axis_number;
+  /**
+   * Execute function on the odrive object
+   */
+  int setConfigurations(Json::Value configuration_json);
 
   std::string serial_number = odrive_endpoint_->odrive_serial_number;
+
+  std::string joint_name;
+  std::string axis_number;
 
 private:
   int getJson();
