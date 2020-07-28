@@ -13,7 +13,7 @@ Odrive::Odrive(const std::string& joint_name, const std::string& axis_number, Od
 
   if (getJson())
   {
-    ROS_ERROR("Odrive %s error getting JSON", serial_number.c_str());
+    ROS_ERROR("Odrive %s error getting JSON", odrive_endpoint_->odrive_serial_number.c_str());
   }
 }
 
@@ -46,16 +46,18 @@ int Odrive::getJson()
 
 odrive_json_object Odrive::getJsonObject(const std::string& parameter_name)
 {
+  std::string full_parameter_name = this->axis_number + "." + parameter_name;
   odrive_json_object json_object;
-  // todo: if this does not work see the ros_odrive repo to see the original function
-  for (auto& i : this->odrive_json_)
+
+  for (auto& parameter : this->odrive_json_)
   {
-    if (!parameter_name.compare(i["name"].asString()))
+    if (full_parameter_name == parameter["name"].asString() or parameter_name == parameter["name"].asString())
     {
-      json_object.id = i["id"].asInt();
-      json_object.name = i["name"].asString();
-      json_object.type = i["type"].asString();
-      json_object.access = i["access"].asString();
+      json_object.id = parameter["id"].asInt();
+      json_object.name = parameter["name"].asString();
+      json_object.type = parameter["type"].asString();
+      json_object.access = parameter["access"].asString();
+
       return json_object;
     }
   }
@@ -68,7 +70,7 @@ odrive_json_object Odrive::getJsonObject(const std::string& parameter_name)
 template <typename TT>
 int Odrive::validateType(const odrive_json_object& json_object, TT& value)
 {
-  if (!json_object.type.compare("float"))
+  if (json_object.type == "float")
   {
     if (sizeof(value) != sizeof(float))
     {
@@ -76,7 +78,7 @@ int Odrive::validateType(const odrive_json_object& json_object, TT& value)
       return ODRIVE_ERROR;
     }
   }
-  else if (!json_object.type.compare("uint8"))
+  else if (json_object.type == "uint8")
   {
     if (sizeof(value) != sizeof(uint8_t))
     {
@@ -84,7 +86,7 @@ int Odrive::validateType(const odrive_json_object& json_object, TT& value)
       return ODRIVE_ERROR;
     }
   }
-  else if (!json_object.type.compare("uint16"))
+  else if (json_object.type == "uint16")
   {
     if (sizeof(value) != sizeof(uint16_t))
     {
@@ -92,7 +94,7 @@ int Odrive::validateType(const odrive_json_object& json_object, TT& value)
       return ODRIVE_ERROR;
     }
   }
-  else if (!json_object.type.compare("uint32"))
+  else if (json_object.type == "uint32")
   {
     if (sizeof(value) != sizeof(uint32_t))
     {
@@ -100,7 +102,7 @@ int Odrive::validateType(const odrive_json_object& json_object, TT& value)
       return ODRIVE_ERROR;
     }
   }
-  else if (!json_object.type.compare("uint64"))
+  else if (json_object.type == "uint64")
   {
     if (sizeof(value) != sizeof(uint64_t))
     {
@@ -108,7 +110,7 @@ int Odrive::validateType(const odrive_json_object& json_object, TT& value)
       return ODRIVE_ERROR;
     }
   }
-  else if (!json_object.type.compare("int32"))
+  else if (json_object.type == "int32")
   {
     if (sizeof(value) != sizeof(int))
     {
@@ -116,7 +118,7 @@ int Odrive::validateType(const odrive_json_object& json_object, TT& value)
       return ODRIVE_ERROR;
     }
   }
-  else if (!json_object.type.compare("int16"))
+  else if (json_object.type == "int16")
   {
     if (sizeof(value) != sizeof(short))
     {
@@ -124,7 +126,7 @@ int Odrive::validateType(const odrive_json_object& json_object, TT& value)
       return ODRIVE_ERROR;
     }
   }
-  else if (!json_object.type.compare("bool"))
+  else if (json_object.type == "bool")
   {
     if (sizeof(value) != sizeof(bool))
     {
@@ -198,7 +200,7 @@ int Odrive::function(const std::string& function_name)
     return ODRIVE_ERROR;
   }
 
-  if (json_object.type.compare("function"))
+  if (json_object.type != "function")
   {
     ROS_ERROR("Error: Given parameter %s is not a function on the Odrive", function_name.c_str());
     return ODRIVE_ERROR;
@@ -209,9 +211,17 @@ int Odrive::function(const std::string& function_name)
   return 0;
 }
 
-int Odrive::setConfigurations(Json::Value configuration_json)
+int Odrive::setConfigurations(const std::string& configuration_json_path)
 {
-  for (auto& parameter : configuration_json)
+  Json::Reader reader;
+  bool res = reader.parse(configuration_json_path, this->odrive_configuration_json_);
+
+  if (!res)
+  {
+    return ODRIVE_ERROR;
+  }
+
+  for (auto& parameter : this->odrive_configuration_json_)
   {
     string name = parameter["name"].asString();
     string type = parameter["type"].asString();

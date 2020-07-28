@@ -60,9 +60,7 @@ public:
   /**
    * Execute function on the odrive object
    */
-  int setConfigurations(Json::Value configuration_json);
-
-  std::string serial_number = odrive_endpoint_->odrive_serial_number;
+  int setConfigurations(const std::string& configuration_json_path);
 
   std::string joint_name;
   std::string axis_number;
@@ -73,6 +71,8 @@ private:
   odrive_json_object getJsonObject(const std::string& parameter_name);
 
   Json::Value odrive_json_;
+  Json::Value odrive_configuration_json_;
+
   OdriveEndpoint* odrive_endpoint_;
 };
 #endif
