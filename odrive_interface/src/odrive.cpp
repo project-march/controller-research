@@ -46,12 +46,11 @@ int Odrive::getJson()
 
 odrive_json_object Odrive::getJsonObject(const std::string& parameter_name)
 {
-  std::string full_parameter_name = this->axis_number + "." + parameter_name;
   odrive_json_object json_object;
 
   for (auto& parameter : this->odrive_json_)
   {
-    if (full_parameter_name == parameter["name"].asString() or parameter_name == parameter["name"].asString())
+    if (parameter["name"].asString().find(parameter_name) != std::string::npos)
     {
       json_object.id = parameter["id"].asInt();
       json_object.name = parameter["name"].asString();
@@ -61,9 +60,9 @@ odrive_json_object Odrive::getJsonObject(const std::string& parameter_name)
       return json_object;
     }
   }
-
   json_object.id = -1;
   ROS_ERROR("Odrive object with name %s is not found in parsed json file", parameter_name.c_str());
+
   return json_object;
 }
 
@@ -213,11 +212,25 @@ int Odrive::function(const std::string& function_name)
 
 int Odrive::setConfigurations(const std::string& configuration_json_path)
 {
+  ifstream cfg;
+  string line, json;
+  cfg.open(configuration_json_path, ios::in);
+
+  if (cfg.is_open())
+  {
+    while (getline(cfg, line))
+    {
+      json.append(line);
+    }
+  }
+  cfg.close();
+
   Json::Reader reader;
-  bool res = reader.parse(configuration_json_path, this->odrive_configuration_json_);
+  bool res = reader.parse(json, this->odrive_configuration_json_);
 
   if (!res)
   {
+    ROS_INFO("Error parsing odrive configuration, error");
     return ODRIVE_ERROR;
   }
 

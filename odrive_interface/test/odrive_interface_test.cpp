@@ -71,8 +71,8 @@ int main(int argc, char** argv)
     publishOdriveData(odrive_publisher_2, odrives_objects[1]);
 
     // update watchdog
-    odrives_objects[0].function("watchdog_feed");
-    odrives_objects[1].function("watchdog_feed");
+    odrives_objects[0].function("axis0.watchdog_feed");
+    odrives_objects[1].function("axis1.watchdog_feed");
 
     r.sleep();
     ros::spinOnce();
