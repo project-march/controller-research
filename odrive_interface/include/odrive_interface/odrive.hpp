@@ -58,7 +58,7 @@ public:
   int function(const std::string& function_name);
 
   /**
-   * Execute function on the odrive object
+   * Set configurations in the Json file to the Odrive
    */
   int setConfigurations(const std::string& configuration_json_path);
 
@@ -66,8 +66,19 @@ public:
   std::string axis_number;
 
 private:
+  /**
+  * Get the Json configuration structure from the odrive
+  */
   int getJson();
 
+  /**
+  * Split given odrive parameter name with standard delimiter .
+  */
+  std::vector<std::string> split_string(const std::string& str, char delimiter = '.');
+
+  /**
+  * Set configurations in the Json file to the Odrive
+  */
   odrive_json_object getJsonObject(const std::string& parameter_name);
 
   Json::Value odrive_json_;

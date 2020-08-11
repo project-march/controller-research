@@ -44,24 +44,55 @@ int Odrive::getJson()
   return ODRIVE_OK;
 }
 
+std::vector<std::string> Odrive::split_string(const std::string& string_name, char delimiter)
+{
+  std::vector<std::string> split_string;
+
+  std::stringstream ss(string_name);
+  std::string token;
+
+  while (std::getline(ss, token, delimiter))
+  {
+    split_string.push_back(token);
+  }
+
+  return split_string;
+}
+
 odrive_json_object Odrive::getJsonObject(const std::string& parameter_name)
 {
   odrive_json_object json_object;
+  std::vector<std::string> parameter_list = this->split_string(parameter_name);
 
-  for (auto& parameter : this->odrive_json_)
+  Json::Value odrive_json_member_object;
+  Json::Value odrive_json_member_list = this->odrive_json_;
+
+  for (std::string& split_parameter_name : parameter_list)
   {
-    if (parameter["name"].asString().find(parameter_name) != std::string::npos)
+    for (auto& json_parameter : odrive_json_member_list)
     {
-      json_object.id = parameter["id"].asInt();
-      json_object.name = parameter["name"].asString();
-      json_object.type = parameter["type"].asString();
-      json_object.access = parameter["access"].asString();
-
-      return json_object;
+      if (json_parameter["name"].asCString() == split_parameter_name)
+      {
+        odrive_json_member_object = json_parameter;
+        odrive_json_member_list = json_parameter["members"];
+        break;
+      }
     }
   }
-  json_object.id = -1;
-  ROS_ERROR("Odrive object with name %s is not found in parsed json file", parameter_name.c_str());
+
+  if (!odrive_json_member_object or odrive_json_member_object["name"].asCString() != parameter_list.back())
+  {
+    json_object.id = -1;
+    ROS_ERROR("Odrive object with name %s is not found in parsed json file", parameter_name.c_str());
+  }
+  else
+  {
+    ROS_WARN("found object is %s", odrive_json_member_object["name"].asCString());
+    json_object.id = odrive_json_member_object["id"].asInt();
+    json_object.name = odrive_json_member_object["name"].asString();
+    json_object.type = odrive_json_member_object["type"].asString();
+    json_object.access = odrive_json_member_object["access"].asString();
+  }
 
   return json_object;
 }
@@ -206,7 +237,6 @@ int Odrive::function(const std::string& function_name)
   }
 
   this->odrive_endpoint_->execFunc(json_object.id);
-
   return 0;
 }
 
@@ -246,9 +276,12 @@ int Odrive::setConfigurations(const std::string& configuration_json_path)
     if (result == 1)
     {
       ROS_INFO("Setting failed");
-
       return result;
-    };
+    }
+    else
+    {
+      ROS_INFO("Setting succeeded %s", name.c_str());
+    }
   }
   return ODRIVE_OK;
 }
