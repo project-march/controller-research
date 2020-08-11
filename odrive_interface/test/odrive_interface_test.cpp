@@ -35,7 +35,7 @@ int main(int argc, char** argv)
   YAML::Node odrives = YAML::LoadFile(path_odrives_configuration);
   const auto serial_number = odrives.begin()->first.as<std::string>();
 
-  auto* odrive_endpoint = new OdriveEndpoint();
+  std::shared_ptr<OdriveEndpoint> odrive_endpoint = std::make_shared<OdriveEndpoint>();
   std::vector<Odrive> odrives_objects;
 
   ROS_INFO("Open serial connection");

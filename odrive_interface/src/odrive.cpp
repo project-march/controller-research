@@ -5,7 +5,7 @@
 
 using namespace std;
 
-Odrive::Odrive(const std::string& joint_name, const std::string& axis_number, OdriveEndpoint* odrive_endpoint)
+Odrive::Odrive(const std::string& joint_name, const std::string& axis_number, std::shared_ptr<OdriveEndpoint> odrive_endpoint)
 {
   this->joint_name = joint_name;
   this->axis_number = axis_number;
