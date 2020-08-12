@@ -1,29 +1,66 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(odrive_interface)
 
+add_compile_options(-std=c++14 -Wall -Wextra -Werror)
+
+find_package(Boost REQUIRED COMPONENTS system)
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  std_msgs
+    message_generation
+    roscpp
+    roslib
+    std_msgs
 )
 
-catkin_python_setup()
-
-catkin_package(CATKIN_DEPENDS
-  roscpp
-  rospy
-  std_msgs
+add_message_files(
+    FILES
+    odrive_msg.msg
 )
 
-catkin_install_python(PROGRAMS scripts/${PROJECT_NAME}_node
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    )
+generate_messages(
+    DEPENDENCIES
+    std_msgs
+)
 
-install(DIRECTORY config launch
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(JSONCPP jsoncpp)
+pkg_check_modules(LIBUSB1 libusb-1.0)
+
+catkin_package(
+    INCLUDE_DIRS include
+    CATKIN_DEPENDS message_runtime roscpp roslib std_msgs
+)
+
+link_libraries(${JSONCPP_LIBRARIES} ${LIBUSB1_LIBRARIES})
+include_directories(include SYSTEM ${catkin_INCLUDE_DIRS})
+
+add_executable(${PROJECT_NAME} src/odrive.cpp src/odrive_endpoint.cpp test/${PROJECT_NAME}_test.cpp)
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}
+    ${catkin_LIBRARIES}
+    ${LIBUSB1_LIBRARIES}
+    ${JSONCPP_LIBRARIES}
+    yaml-cpp
+)
+
+install(TARGETS ${PROJECT_NAME} 
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(TARGETS ${PROJECT_NAME}
+    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
+
+install(DIRECTORY config
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-    )
-
-include_directories(
-  ${catkin_INCLUDE_DIRS}
 )
+
+
