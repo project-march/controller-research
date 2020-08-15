@@ -5,14 +5,17 @@
 #define ODRIVE_OK 0;
 #define ODRIVE_ERROR 1;
 
-Odrive::Odrive(const std::string& axis_number, std::shared_ptr<OdriveEndpoint> odrive_endpoint)
+Odrive::Odrive(const std::string& axis_number, std::shared_ptr<OdriveEndpoint> odrive_endpoint, bool import_json)
 {
   this->axis_number = axis_number;
   this->odrive_endpoint_ = std::move(odrive_endpoint);
 
-  if (this->importOdriveJson())
+  if (import_json)
   {
-    ROS_ERROR("Odrive %s error getting JSON", odrive_endpoint_->odrive_serial_number.c_str());
+    if (this->importOdriveJson())
+    {
+      ROS_ERROR("Odrive %s error getting JSON", odrive_endpoint_->odrive_serial_number.c_str());
+    }
   }
 }
 
@@ -340,16 +343,16 @@ int Odrive::setConfigurations(const std::string& configuration_json_path)
 
   for (auto& parameter : this->odrive_configuration_json_)
   {
-    ROS_INFO("Setting %s to %s", parameter["name"].asCString(), parameter["value"].asCString());
+    ROS_INFO("Setting %s to %s", parameter["name"].asString().c_str(), parameter["value"].asString().c_str());
     int result = this->json_string_write(parameter);
 
     if (result != LIBUSB_SUCCESS)
     {
-      ROS_INFO("Setting %s to %s failed", parameter["name"].asCString(), parameter["value"].asCString());
+      ROS_INFO("Setting %s to %s failed", parameter["name"].asString().c_str(), parameter["value"].asString().c_str());
       continue;
     }
 
-    ROS_INFO("Setting succeeded %s", parameter["name"].asCString());
+    ROS_INFO("Setting succeeded %s", parameter["name"].asString().c_str());
   }
   return ODRIVE_OK;
 }

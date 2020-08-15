@@ -32,7 +32,8 @@ public:
   /**
    * Initialize the odrive with specified axis
    */
-  Odrive(const std::string& axis_number, std::shared_ptr<OdriveEndpoint> odrive_endpoint);
+  Odrive(const std::string& axis_number, std::shared_ptr<OdriveEndpoint> odrive_endpoint,
+         bool import_json = true);
 
   /**
    * Check if given value type matched value type of odrive variable

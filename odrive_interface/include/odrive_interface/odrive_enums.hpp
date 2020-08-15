@@ -1,6 +1,12 @@
 #ifndef ODRIVE_ENUMS_HPP_
 #define ODRIVE_ENUMS_HPP_
 
+
+// axis command names
+#define PM_ENCODER_COUNTS ".encoder.shadow_count"
+#define ODRIVE_INPUT_VOLTAGE "vbus_voltage"
+
+// axis states
 #define AXIS_STATE_UNDEFINED 0
 #define AXIS_STATE_IDLE 1
 #define AXIS_STATE_STARTUP_SEQUENCE 2

@@ -6,7 +6,7 @@
     },
     {
         "name":"axis0.motor.config.pole_pairs",
-        "type":"int32",
+        "type":"uint32",
         "value":21
     },
     {
@@ -46,7 +46,7 @@
     },
     {
         "name":"axis0.motor.config.direction",
-        "type":"int32",
+        "type":"uint8",
         "value":1
     },
     {
