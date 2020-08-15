@@ -355,7 +355,6 @@ int Odrive::setConfigurations(const std::string& configuration_json_path)
   return ODRIVE_OK;
 }
 
-
 template int Odrive::validateType(const odrive_json_object& json_object, uint8_t&);
 template int Odrive::validateType(const odrive_json_object& json_object, uint16_t&);
 template int Odrive::validateType(const odrive_json_object& json_object, uint32_t&);
