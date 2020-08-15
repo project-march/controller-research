@@ -1,5 +1,3 @@
 0x2084387E304E:
   - left_knee:
       axis: "axis0"
-  - left_hip_fe:
-      axis: "axis1"

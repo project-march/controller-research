@@ -1,5 +1,7 @@
 #include "odrive_interface/odrive.hpp"
 
+#include <utility>
+
 #define ODRIVE_OK 0;
 #define ODRIVE_ERROR 1;
 
@@ -10,9 +12,9 @@ Odrive::Odrive(const std::string& joint_name, const std::string& axis_number,
 {
   this->joint_name = joint_name;
   this->axis_number = axis_number;
-  this->odrive_endpoint_ = odrive_endpoint;
+  this->odrive_endpoint_ = std::move(odrive_endpoint);
 
-  if (getJson())
+  if (this->getJson())
   {
     ROS_ERROR("Odrive %s error getting JSON", odrive_endpoint_->odrive_serial_number.c_str());
   }
@@ -88,7 +90,6 @@ odrive_json_object Odrive::getJsonObject(const std::string& parameter_name)
   }
   else
   {
-    ROS_WARN("found object is %s", odrive_json_member_object["name"].asCString());
     json_object.id = odrive_json_member_object["id"].asInt();
     json_object.name = odrive_json_member_object["name"].asString();
     json_object.type = odrive_json_member_object["type"].asString();
@@ -274,15 +275,13 @@ int Odrive::setConfigurations(const std::string& configuration_json_path)
     ROS_INFO("Setting %s to %s", name.c_str(), parameter["value"].asString().c_str());
     int result = this->write(name, value);
 
-    if (result == 1)
+    if (result != LIBUSB_SUCCESS)
     {
       ROS_INFO("Setting failed");
-      return result;
+      return ODRIVE_ERROR;
     }
-    else
-    {
-      ROS_INFO("Setting succeeded %s", name.c_str());
-    }
+
+    ROS_INFO("Setting succeeded %s", name.c_str());
   }
   return ODRIVE_OK;
 }

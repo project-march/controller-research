@@ -167,6 +167,9 @@ private:
   libusb_context* lib_usb_context_ = nullptr;
   libusb_device_handle* odrive_handle_ = nullptr;
 
+  bool attached_to_handle_;
+  int crc_;
+
   int outbound_seq_no_ = 0;
 
   std::mutex ep_lock_;

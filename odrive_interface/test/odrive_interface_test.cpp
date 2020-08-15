@@ -22,7 +22,7 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "odrive_test_node");
   ros::NodeHandle nh;
 
-  ros::Rate r(1);
+  ros::Rate r(100);
 
   ROS_INFO("Starting odrives...");
 
@@ -52,27 +52,28 @@ int main(int argc, char** argv)
     ROS_INFO("Init %s with sn; %s and axis nr; %s", joint_name.c_str(), serial_number.c_str(), axis_name.c_str());
     Odrive odrive(joint_name, axis_name, odrive_endpoint);
 
-    ROS_INFO("Configure the odrive with file %s", path_odrive_setting.c_str());
-    odrive.setConfigurations(path_odrive_setting);
+    //    ROS_INFO("Configure the odrive with file %s", path_odrive_setting.c_str());
+    //    odrive.setConfigurations(path_odrive_setting);
 
     odrives_objects.push_back(odrive);
   }
+  ROS_INFO("done");
 
   ros::Publisher odrive_publisher_1 =
       nh.advertise<odrive_interface::odrive_msg>("odrive_msg_" + odrives_objects[0].axis_number, 100);
-  ros::Publisher odrive_publisher_2 =
-      nh.advertise<odrive_interface::odrive_msg>("odrive_msg_" + odrives_objects[1].axis_number, 100);
+  //  ros::Publisher odrive_publisher_2 =
+  //      nh.advertise<odrive_interface::odrive_msg>("odrive_msg_" + odrives_objects[1].axis_number, 100);
 
   ROS_INFO("Starting idle loop");
   while (ros::ok())
   {
     // Publish status message
     publishOdriveData(odrive_publisher_1, odrives_objects[0]);
-    publishOdriveData(odrive_publisher_2, odrives_objects[1]);
+    //    publishOdriveData(odrive_publisher_2, odrives_objects[1]);
 
     // update watchdog
     odrives_objects[0].function("axis0.watchdog_feed");
-    odrives_objects[1].function("axis1.watchdog_feed");
+    //    odrives_objects[1].function("axis1.watchdog_feed");
 
     r.sleep();
     ros::spinOnce();

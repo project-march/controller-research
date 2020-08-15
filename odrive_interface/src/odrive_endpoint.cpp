@@ -13,6 +13,8 @@ OdriveEndpoint::OdriveEndpoint()
 
 OdriveEndpoint::~OdriveEndpoint()
 {
+  this->remove();
+
   if (lib_usb_context_ != nullptr)
   {
     libusb_exit(lib_usb_context_);
@@ -58,7 +60,7 @@ int OdriveEndpoint::open_connection(const std::string& serial_number)
       libusb_device_handle* device_handle;
       struct libusb_config_descriptor* config;
 
-      bool attached_to_handle = false;
+      this->attached_to_handle_ = false;
       unsigned char buf[128];
 
       if (libusb_open(device, &device_handle) != LIBUSB_SUCCESS)
@@ -68,6 +70,12 @@ int OdriveEndpoint::open_connection(const std::string& serial_number)
       }
 
       result = libusb_get_config_descriptor(device, 0, &config);
+      if (result != LIBUSB_SUCCESS)
+      {
+        ROS_WARN("Odrive %s error getting device descriptor", serial_number.c_str());
+        continue;
+      }
+
       int ifNumber = 2;  // config->bNumInterfaces;
 
       if ((libusb_kernel_driver_active(device_handle, ifNumber) != LIBUSB_SUCCESS) &&
@@ -79,7 +87,7 @@ int OdriveEndpoint::open_connection(const std::string& serial_number)
         continue;
       }
 
-      if ((result = libusb_claim_interface(device_handle, ifNumber)) != LIBUSB_SUCCESS)
+      if (libusb_claim_interface(device_handle, ifNumber) != LIBUSB_SUCCESS)
       {
         ROS_ERROR("Odrive %s error claiming device", serial_number.c_str());
         libusb_close(device_handle);
@@ -90,7 +98,7 @@ int OdriveEndpoint::open_connection(const std::string& serial_number)
         result = libusb_get_string_descriptor_ascii(device_handle, desc.iSerialNumber, buf, 127);
         if (result <= 0)
         {
-          result = libusb_release_interface(device_handle, ifNumber);
+          libusb_release_interface(device_handle, ifNumber);
           libusb_close(device_handle);
 
           ROS_ERROR("Odrive %s error getting data", serial_number.c_str());
@@ -105,16 +113,16 @@ int OdriveEndpoint::open_connection(const std::string& serial_number)
           if (sn.compare(0, strlen((const char*)buf), (const char*)buf) == 0)
           {
             ROS_INFO("Odrive with serial number; %s found", serial_number.c_str());
-
+            this->attached_to_handle_ = true;
             this->odrive_serial_number = serial_number;
+
             odrive_handle_ = device_handle;
-            attached_to_handle = true;
             break;
           }
         }
-        if (!attached_to_handle)
+        if (!this->attached_to_handle_)
         {
-          result = libusb_release_interface(device_handle, ifNumber);
+          libusb_release_interface(device_handle, ifNumber);
           libusb_close(device_handle);
         }
       }
@@ -133,7 +141,7 @@ int OdriveEndpoint::getData(int id, T& value)
   commBuffer rx;
   int rx_size;
 
-  int result = endpointRequest(id, rx, rx_size, tx, true /* ACK */, sizeof(value));
+  int result = this->endpointRequest(id, rx, rx_size, tx, true /* ACK */, sizeof(value));
   if (result != ODRIVE_COMM_SUCCESS)
   {
     return result;
@@ -156,7 +164,7 @@ int OdriveEndpoint::setData(int endpoint_id, const TT& value)
     tx.push_back(((unsigned char*)&value)[i]);
   }
 
-  return endpointRequest(endpoint_id, rx, rx_length, tx, 1, 0);
+  return this->endpointRequest(endpoint_id, rx, rx_length, tx, 0, 0);
 }
 
 int OdriveEndpoint::execFunc(int endpoint_id)
@@ -165,7 +173,7 @@ int OdriveEndpoint::execFunc(int endpoint_id)
   commBuffer rx;
   int rx_length;
 
-  return endpointRequest(endpoint_id, rx, rx_length, tx, true, 0);
+  return this->endpointRequest(endpoint_id, rx, rx_length, tx, 0, 0);
 }
 
 int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payload, int& received_length,
@@ -195,13 +203,15 @@ int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payloa
   commBuffer packet = createODrivePacket(seq_no, endpoint_id, length, read, address, payload);
 
   // Transfer packet to target
-  int result = libusb_bulk_transfer(odrive_handle_, ODRIVE_OUT_EP, packet.data(), packet.size(), &sent_bytes, 0);
+  int result =
+      libusb_bulk_transfer(odrive_handle_, ODRIVE_OUT_EP, packet.data(), packet.size(), &sent_bytes, ODRIVE_TIMEOUT);
   if (result != LIBUSB_SUCCESS)
   {
     ROS_ERROR("Odrive %s error in transferring data to USB", this->odrive_serial_number.c_str());
     this->ep_lock_.unlock();
     return result;
   }
+
   else if (int(packet.size()) != sent_bytes)
   {
     ROS_ERROR("Odrive %s error not all data transferring to USB was successful", this->odrive_serial_number.c_str());
@@ -214,7 +224,7 @@ int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payloa
                                   &received_bytes, ODRIVE_TIMEOUT);
     if (result != LIBUSB_SUCCESS)
     {
-      ROS_ERROR("Odrive %s error in reading data from USB", this->odrive_serial_number.c_str());
+      ROS_ERROR("Odrive %s error in acknowledging response from USB", this->odrive_serial_number.c_str());
       this->ep_lock_.unlock();
       return result;
     }
@@ -234,7 +244,6 @@ int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payloa
   }
 
   this->ep_lock_.unlock();
-
   return LIBUSB_SUCCESS;
 }
 
@@ -270,15 +279,15 @@ commBuffer OdriveEndpoint::createODrivePacket(short seq_no, int endpoint_id, sho
                                               int address, const commBuffer& input)
 {
   commBuffer packet;
-  short crc = 0;
+  this->crc_ = 0;
 
   if ((endpoint_id & 0x7fff) == 0)
   {
-    crc = ODRIVE_PROTOCOL_VERION;
+    this->crc_ = ODRIVE_PROTOCOL_VERION;
   }
   else
   {
-    crc = ODRIVE_DEFAULT_CRC_VALUE;
+    this->crc_ = ODRIVE_DEFAULT_CRC_VALUE;
   }
 
   appendShortToCommBuffer(packet, seq_no);
@@ -294,7 +303,7 @@ commBuffer OdriveEndpoint::createODrivePacket(short seq_no, int endpoint_id, sho
     packet.push_back(b);
   }
 
-  appendShortToCommBuffer(packet, crc);
+  appendShortToCommBuffer(packet, this->crc_);
 
   return packet;
 }
