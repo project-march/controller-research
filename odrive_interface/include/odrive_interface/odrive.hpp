@@ -69,7 +69,11 @@ public:
 private:
   int getJson();
 
-  std::vector<std::string> split_string(const std::string& str, char delimiter = '.');
+  int string_read(const std::string& parameter_name, const std::string& type_name, const Json::Value& value);
+
+  int string_write(const std::string& parameter_name, const std::string& type_name, const Json::Value& value);
+
+  static std::vector<std::string> split_string(const std::string& str, char delimiter = '.');
 
   odrive_json_object getJsonObject(const std::string& parameter_name);
 

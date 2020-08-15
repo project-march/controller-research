@@ -99,6 +99,25 @@ odrive_json_object Odrive::getJsonObject(const std::string& parameter_name)
   return json_object;
 }
 
+int Odrive::function(const std::string& function_name)
+{
+  odrive_json_object json_object = this->getJsonObject(function_name);
+
+  if (json_object.id == -1)
+  {
+    return ODRIVE_ERROR;
+  }
+
+  if (json_object.type != "function")
+  {
+    ROS_ERROR("Error: Given parameter %s is not a function on the Odrive", function_name.c_str());
+    return ODRIVE_ERROR;
+  }
+
+  this->odrive_endpoint_->execFunc(json_object.id);
+  return 0;
+}
+
 template <typename TT>
 int Odrive::validateType(const odrive_json_object& json_object, TT& value)
 {
@@ -223,23 +242,72 @@ int Odrive::write(const std::string& parameter_name, TT& value)
   return this->odrive_endpoint_->setData(json_object.id, value);
 }
 
-int Odrive::function(const std::string& function_name)
+int Odrive::string_read(const std::string& parameter_name, const std::string& type_name, const Json::Value& value)
 {
-  odrive_json_object json_object = this->getJsonObject(function_name);
-
-  if (json_object.id == -1)
+  if (type_name == "uint8")
   {
+    uint8_t casted_value = value.asUInt();
+    return this->read(parameter_name, casted_value);
+  }
+  else if (type_name == "uint16")
+  {
+    uint16_t casted_value = value.asUInt();
+    return this->read(parameter_name, casted_value);
+  }
+  else if (type_name == "uint32")
+  {
+    uint32_t casted_value = value.asUInt();
+    return this->read(parameter_name, casted_value);
+  }
+  else if (type_name == "float")
+  {
+    float casted_value = value.asFloat();
+    return this->read(parameter_name, casted_value);
+  }
+  else if (type_name == "bool")
+  {
+    bool casted_value = value.asBool();
+    return this->read(parameter_name, casted_value);
+  }
+  else
+  {
+    ROS_ERROR("Error converting string for reading, invalid type %s", parameter_name.c_str());
     return ODRIVE_ERROR;
   }
+}
 
-  if (json_object.type != "function")
+int Odrive::string_write(const std::string& parameter_name, const std::string& type_name, const Json::Value& value)
+{
+  if (type_name == "uint8")
   {
-    ROS_ERROR("Error: Given parameter %s is not a function on the Odrive", function_name.c_str());
+    uint8_t casted_value = value.asUInt();
+    return this->write(parameter_name, casted_value);
+  }
+  else if (type_name == "uint16")
+  {
+    uint16_t casted_value = value.asUInt();
+    return this->write(parameter_name, casted_value);
+  }
+  else if (type_name == "uint32")
+  {
+    uint32_t casted_value = value.asUInt();
+    return this->write(parameter_name, casted_value);
+  }
+  else if (type_name == "float")
+  {
+    float casted_value = value.asFloat();
+    return this->write(parameter_name, casted_value);
+  }
+  else if (type_name == "bool")
+  {
+    bool casted_value = value.asBool();
+    return this->write(parameter_name, casted_value);
+  }
+  else
+  {
+    ROS_ERROR("Error converting string for writing, invalid type %s", parameter_name.c_str());
     return ODRIVE_ERROR;
   }
-
-  this->odrive_endpoint_->execFunc(json_object.id);
-  return 0;
 }
 
 int Odrive::setConfigurations(const std::string& configuration_json_path)
@@ -268,23 +336,25 @@ int Odrive::setConfigurations(const std::string& configuration_json_path)
 
   for (auto& parameter : this->odrive_configuration_json_)
   {
-    string name = parameter["name"].asString();
-    string type = parameter["type"].asString();
-    float value = parameter["value"].asFloat();
+    int result;
+
+    std::string name = parameter["name"].asString();
+    std::string type = parameter["type"].asString();
 
     ROS_INFO("Setting %s to %s", name.c_str(), parameter["value"].asString().c_str());
-    int result = this->write(name, value);
+    result = this->string_write(name, type, parameter["value"]);
 
     if (result != LIBUSB_SUCCESS)
     {
-      ROS_INFO("Setting failed");
-      return ODRIVE_ERROR;
+      ROS_INFO("Setting %s to %s failed", name.c_str(), parameter["value"].asString().c_str());
+      continue;
     }
 
     ROS_INFO("Setting succeeded %s", name.c_str());
   }
   return ODRIVE_OK;
 }
+
 
 template int Odrive::validateType(const odrive_json_object& json_object, uint8_t&);
 template int Odrive::validateType(const odrive_json_object& json_object, uint16_t&);

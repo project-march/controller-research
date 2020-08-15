@@ -141,7 +141,7 @@ int OdriveEndpoint::getData(int id, T& value)
   commBuffer rx;
   int rx_size;
 
-  int result = this->endpointRequest(id, rx, rx_size, tx, true /* ACK */, sizeof(value));
+  int result = this->endpointRequest(id, rx, rx_size, tx, true, sizeof(value));
   if (result != ODRIVE_COMM_SUCCESS)
   {
     return result;
@@ -164,7 +164,7 @@ int OdriveEndpoint::setData(int endpoint_id, const TT& value)
     tx.push_back(((unsigned char*)&value)[i]);
   }
 
-  return this->endpointRequest(endpoint_id, rx, rx_length, tx, 0, 0);
+  return this->endpointRequest(endpoint_id, rx, rx_length, tx, true, 0);
 }
 
 int OdriveEndpoint::execFunc(int endpoint_id)
@@ -173,7 +173,7 @@ int OdriveEndpoint::execFunc(int endpoint_id)
   commBuffer rx;
   int rx_length;
 
-  return this->endpointRequest(endpoint_id, rx, rx_length, tx, 0, 0);
+  return this->endpointRequest(endpoint_id, rx, rx_length, tx, false, 0);
 }
 
 int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payload, int& received_length,
@@ -203,13 +203,14 @@ int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payloa
   commBuffer packet = createODrivePacket(seq_no, endpoint_id, length, read, address, payload);
 
   // Transfer packet to target
-  int result =
-      libusb_bulk_transfer(odrive_handle_, ODRIVE_OUT_EP, packet.data(), packet.size(), &sent_bytes, ODRIVE_TIMEOUT);
-  if (result != LIBUSB_SUCCESS)
+  int transfer_result = libusb_bulk_transfer(odrive_handle_, ODRIVE_OUT_EP, packet.data(), packet.size(), &sent_bytes, ODRIVE_TIMEOUT);
+  if (transfer_result != LIBUSB_SUCCESS)
   {
-    ROS_ERROR("Odrive %s error in transferring data to USB", this->odrive_serial_number.c_str());
+    ROS_ERROR("Odrive %s error in transferring data to USB, error id %i",
+              this->odrive_serial_number.c_str(), transfer_result);
+
     this->ep_lock_.unlock();
-    return result;
+    return transfer_result;
   }
 
   else if (int(packet.size()) != sent_bytes)
@@ -220,13 +221,15 @@ int OdriveEndpoint::endpointRequest(int endpoint_id, commBuffer& received_payloa
   // Get response
   if (ack)
   {
-    result = libusb_bulk_transfer(odrive_handle_, ODRIVE_IN_EP, receive_bytes, ODRIVE_MAX_BYTES_TO_RECEIVE,
+    int ack_result = libusb_bulk_transfer(odrive_handle_, ODRIVE_IN_EP, receive_bytes, ODRIVE_MAX_BYTES_TO_RECEIVE,
                                   &received_bytes, ODRIVE_TIMEOUT);
-    if (result != LIBUSB_SUCCESS)
+    if (ack_result != LIBUSB_SUCCESS)
     {
-      ROS_ERROR("Odrive %s error in acknowledging response from USB", this->odrive_serial_number.c_str());
+      ROS_ERROR("Odrive %s error in acknowledging response from USB, error id %i",
+                this->odrive_serial_number.c_str(), ack_result);
+
       this->ep_lock_.unlock();
-      return result;
+      return ack_result;
     }
 
     // Push received data to buffer
