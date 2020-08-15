@@ -5,46 +5,15 @@
 #define ODRIVE_OK 0;
 #define ODRIVE_ERROR 1;
 
-using namespace std;
-
-Odrive::Odrive(const std::string& joint_name, const std::string& axis_number,
-               std::shared_ptr<OdriveEndpoint> odrive_endpoint)
+Odrive::Odrive(const std::string& axis_number, std::shared_ptr<OdriveEndpoint> odrive_endpoint)
 {
-  this->joint_name = joint_name;
   this->axis_number = axis_number;
   this->odrive_endpoint_ = std::move(odrive_endpoint);
 
-  if (this->getJson())
+  if (this->importOdriveJson())
   {
     ROS_ERROR("Odrive %s error getting JSON", odrive_endpoint_->odrive_serial_number.c_str());
   }
-}
-
-int Odrive::getJson()
-{
-  commBuffer rx;
-  commBuffer tx;
-
-  int len;
-  int address = 0;
-
-  string json;
-
-  do
-  {
-    this->odrive_endpoint_->endpointRequest(0, rx, len, tx, true, 512, true, address);
-    address = address + len;
-    json.append((const char*)&rx[0], (size_t)len);
-  } while (len > 0);
-
-  Json::Reader reader;
-  bool res = reader.parse(json, this->odrive_json_);
-
-  if (!res)
-  {
-    return ODRIVE_ERROR;
-  }
-  return ODRIVE_OK;
 }
 
 std::vector<std::string> Odrive::split_string(const std::string& string_name, char delimiter)
@@ -97,6 +66,33 @@ odrive_json_object Odrive::getJsonObject(const std::string& parameter_name)
   }
 
   return json_object;
+}
+
+int Odrive::importOdriveJson()
+{
+  commBuffer rx;
+  commBuffer tx;
+
+  int len;
+  int address = 0;
+
+  std::string json;
+
+  do
+  {
+    this->odrive_endpoint_->endpointRequest(0, rx, len, tx, true, 512, true, address);
+    address = address + len;
+    json.append((const char*)&rx[0], (size_t)len);
+  } while (len > 0);
+
+  Json::Reader reader;
+  bool res = reader.parse(json, this->odrive_json_);
+
+  if (!res)
+  {
+    return ODRIVE_ERROR;
+  }
+  return ODRIVE_OK;
 }
 
 int Odrive::function(const std::string& function_name)
@@ -204,7 +200,7 @@ int Odrive::read(const std::string& parameter_name, TT& value)
     return ODRIVE_ERROR;
   }
 
-  if (json_object.access.find('r') == string::npos)
+  if (json_object.access.find('r') == std::string::npos)
   {
     ROS_ERROR("Error: invalid read access for %s", parameter_name.c_str());
     return ODRIVE_ERROR;
@@ -228,7 +224,7 @@ int Odrive::write(const std::string& parameter_name, TT& value)
     return ODRIVE_ERROR;
   }
 
-  if (json_object.access.find('w') == string::npos)
+  if (json_object.access.find('w') == std::string::npos)
   {
     ROS_ERROR("Error: invalid read access for %s", parameter_name.c_str());
     return ODRIVE_ERROR;
@@ -242,8 +238,12 @@ int Odrive::write(const std::string& parameter_name, TT& value)
   return this->odrive_endpoint_->setData(json_object.id, value);
 }
 
-int Odrive::string_read(const std::string& parameter_name, const std::string& type_name, const Json::Value& value)
+int Odrive::json_string_read(const Json::Value& json_parameter_object)
 {
+  std::string parameter_name = json_parameter_object["name"].asString();
+  std::string type_name = json_parameter_object["type"].asString();
+  Json::Value value = json_parameter_object["value"];
+
   if (type_name == "uint8")
   {
     uint8_t casted_value = value.asUInt();
@@ -276,8 +276,12 @@ int Odrive::string_read(const std::string& parameter_name, const std::string& ty
   }
 }
 
-int Odrive::string_write(const std::string& parameter_name, const std::string& type_name, const Json::Value& value)
+int Odrive::json_string_write(const Json::Value& json_parameter_object)
 {
+  std::string parameter_name = json_parameter_object["name"].asString();
+  std::string type_name = json_parameter_object["type"].asString();
+  Json::Value value = json_parameter_object["value"];
+
   if (type_name == "uint8")
   {
     uint8_t casted_value = value.asUInt();
@@ -312,9 +316,9 @@ int Odrive::string_write(const std::string& parameter_name, const std::string& t
 
 int Odrive::setConfigurations(const std::string& configuration_json_path)
 {
-  ifstream cfg;
-  string line, json;
-  cfg.open(configuration_json_path, ios::in);
+  std::ifstream cfg;
+  std::string line, json;
+  cfg.open(configuration_json_path, std::ios::in);
 
   if (cfg.is_open())
   {
@@ -336,21 +340,16 @@ int Odrive::setConfigurations(const std::string& configuration_json_path)
 
   for (auto& parameter : this->odrive_configuration_json_)
   {
-    int result;
-
-    std::string name = parameter["name"].asString();
-    std::string type = parameter["type"].asString();
-
-    ROS_INFO("Setting %s to %s", name.c_str(), parameter["value"].asString().c_str());
-    result = this->string_write(name, type, parameter["value"]);
+    ROS_INFO("Setting %s to %s", parameter["name"].asCString(), parameter["value"].asCString());
+    int result = this->json_string_write(parameter);
 
     if (result != LIBUSB_SUCCESS)
     {
-      ROS_INFO("Setting %s to %s failed", name.c_str(), parameter["value"].asString().c_str());
+      ROS_INFO("Setting %s to %s failed", parameter["name"].asCString(), parameter["value"].asCString());
       continue;
     }
 
-    ROS_INFO("Setting succeeded %s", name.c_str());
+    ROS_INFO("Setting succeeded %s", parameter["name"].asCString());
   }
   return ODRIVE_OK;
 }

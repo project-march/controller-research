@@ -32,8 +32,7 @@ public:
   /**
    * Initialize the odrive with specified axis
    */
-  Odrive(const std::string& joint_name, const std::string& axis_number,
-         std::shared_ptr<OdriveEndpoint> odrive_endpoint);
+  Odrive(const std::string& axis_number, std::shared_ptr<OdriveEndpoint> odrive_endpoint);
 
   /**
    * Check if given value type matched value type of odrive variable
@@ -63,15 +62,14 @@ public:
    */
   int setConfigurations(const std::string& configuration_json_path);
 
-  std::string joint_name;
   std::string axis_number;
 
 private:
-  int getJson();
+  int importOdriveJson();
 
-  int string_read(const std::string& parameter_name, const std::string& type_name, const Json::Value& value);
+  int json_string_read(const Json::Value& json_parameter_object);
 
-  int string_write(const std::string& parameter_name, const std::string& type_name, const Json::Value& value);
+  int json_string_write(const Json::Value& json_parameter_object);
 
   static std::vector<std::string> split_string(const std::string& str, char delimiter = '.');
 
