@@ -1,5 +1,5 @@
-float32 voltage  # Bus voltage
-
-int32 error      # Axis error
-uint8 state      # Axis state
-uint64 encoder   # Axis encoder count
+float32 controller_voltage  # Bus voltage
+float32 current   # Axis current
+float32 position  # Axis encoder position
+float32 velocity  # Axis encoder velocity
+float32 torque    # Axis torque

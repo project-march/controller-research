@@ -10,11 +10,17 @@ void publishOdriveData(const ros::Publisher& odrive_publisher, OdriveMotor odriv
 {
   odrive_interface::odrive_msg msg;
 
-  float vbus_voltage = odrive_object.get_input_voltage();
-  int encoder_counts = odrive_object.get_position();
+  float position = odrive_object.getAngleRadIncremental();
+  float velocity = odrive_object.getVelocityRadIncremental();
+  float voltage = odrive_object.getMotorControllerVoltage();
+  float current = odrive_object.getMotorCurrent();
+  float torque = odrive_object.getTorque();
 
-  msg.voltage = vbus_voltage;
-  msg.encoder = encoder_counts;
+  msg.controller_voltage = voltage;
+  msg.current = current;
+  msg.position = position;
+  msg.velocity = velocity;
+  msg.torque = torque;
 
   odrive_publisher.publish(msg);
 }
@@ -53,7 +59,7 @@ int main(int argc, char** argv)
     ROS_INFO("Init and configure %s with sn; %s and axis nr; %s ", joint_name.c_str(), serial_number.c_str(),
              axis_name.c_str());
 
-    OdriveMotor odrive(axis_name, odrive_endpoint, joint_name);
+    OdriveMotor odrive(axis_name, odrive_endpoint);
     odrive.setConfigurations(path_odrive_setting);
 
     odrives_objects.push_back(odrive);
