@@ -13,10 +13,16 @@
 #include <string>
 #include <fstream>
 #include <jsoncpp/json/json.h>
+#include <utility>
 
 #include "ros/ros.h"
 #include "odrive_interface/odrive_endpoint.hpp"
 #include "odrive_interface/odrive_enums.hpp"
+
+#define ODRIVE_OK 0;
+#define ODRIVE_ERROR 1;
+
+
 
 typedef struct odrive_json_object
 {

@@ -1,23 +1,30 @@
 #ifndef ODRIVE_ENUMS_HPP_
 #define ODRIVE_ENUMS_HPP_
 
-
 // axis command names
-#define PM_ENCODER_COUNTS ".encoder.shadow_count"
-#define ODRIVE_INPUT_VOLTAGE "vbus_voltage"
+#define O_PM_REQUEST_STATE ".requested_state"
+#define O_PM_CURRENT_STATE ".current_state"
+#define O_PM_ENCODER_POSITION_UI ".encoder.pos_estimate"
+#define O_PM_ENCODER_VELOCITY_UI ".encoder.vel_estimate"
+#define O_PM_ODRIVE_INPUT_VOLTAGE "vbus_voltage"
+#define O_PM_ACTUAL_MOTOR_CURRENT ".motor.current_control.Iq_measured"
+
 
 // axis states
-#define AXIS_STATE_UNDEFINED 0
-#define AXIS_STATE_IDLE 1
-#define AXIS_STATE_STARTUP_SEQUENCE 2
-#define AXIS_STATE_FULL_CALIBRATION_SEQUENCE 3
-#define AXIS_STATE_MOTOR_CALIBRATION 4
-#define AXIS_STATE_SENSORLESS_CONTROL 5
-#define AXIS_STATE_ENCODER_INDEX_SEARCH 6
-#define AXIS_STATE_ENCODER_OFFSET_CALIBRATION 7
-#define AXIS_STATE_CLOSED_LOOP_CONTROL 8
-#define AXIS_STATE_LOCKIN_SPIN 9
-#define AXIS_STATE_ENCODER_DIR_FIND 10
+enum States : int
+{
+    AXIS_STATE_UNDEFINED = 0,
+    AXIS_STATE_IDLE = 1,
+    AXIS_STATE_STARTUP_SEQUENCE = 2,
+    AXIS_STATE_FULL_CALIBRATION_SEQUENCE = 3,
+    AXIS_STATE_MOTOR_CALIBRATION = 4,
+    AXIS_STATE_SENSORLESS_CONTROL = 5,
+    AXIS_STATE_ENCODER_INDEX_SEARCH = 6,
+    AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7,
+    AXIS_STATE_CLOSED_LOOP_CONTROL = 8,
+    AXIS_STATE_LOCKIN_SPIN = 9,
+    AXIS_STATE_ENCODER_DIR_FIND = 10
+};
 
 #define ERROR_NONE 0x00
 
@@ -27,7 +34,7 @@
 #define ERROR_DC_BUS_OVER_VOLTAGE 0x04
 #define ERROR_CURRENT_MEASUREMENT_TIMEOUT 0x08
 #define ERROR_BRAKE_RESISTOR_DISARMED 0x10  //<! the brake resistor was unexpectedly disarmed
-#define ERROR_MOTOR_DISARMED 0x20           //<! the motor was unexpectedly disarmed
+#define ERROR_MOTOR_DISARMED 0x20  //<! the motor was unexpectedly disarmed
 #define ERROR_MOTOR_FAILED 0x40
 #define ERROR_SENSORLESS_ESTIMATOR_FAILED 0x80
 #define ERROR_ENCODER_FAILED 0x100
